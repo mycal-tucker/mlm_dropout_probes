@@ -32,7 +32,7 @@ model:
 probe:
   task_signature: word_pair # word, word_pair
   task_name: parse-distance  # parse-depth, parse-distance
-  num_layers: 1
+  num_layers: 3
   maximum_rank: 32
   diagonal: False
   params_path: predictor.params
@@ -40,7 +40,7 @@ probe_training:
   epochs: 30
   loss: L1
 reporting:
-  root: saved_models/example/model_dist_1layer/model_dist
+  root: saved_models/model_dist_3layer/model_dist
   observation_paths:
     train_path: train.observations
     dev_path: dev.observations

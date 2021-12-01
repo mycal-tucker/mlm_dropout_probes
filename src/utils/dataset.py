@@ -360,7 +360,7 @@ class BERTDataset(SubwordDataset):
                 input_ids = subword_tokenizer.encode_plus(question, context, add_special_tokens=True).data['input_ids']
                 tokenized_sent = [subword_tokenizer.decode(input_id) for input_id in input_ids]
             else:
-                tokenized_sent = subword_tokenizer.wordpiece_tokenizer.tokenize(
+                tokenized_sent = subword_tokenizer.tokenize(
                     '[CLS] ' + ' '.join(observation.sentence) + ' [SEP]')
             untokenized_sent = observation.sentence
             untok_tok_mapping = self.match_tokenized_to_untokenized(tokenized_sent, untokenized_sent)

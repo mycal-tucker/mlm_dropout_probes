@@ -7,8 +7,8 @@ from matplotlib.ticker import FormatStrFormatter
 
 cloze_task = 'cloze'
 
-text_dir = 'data/example/'
-counterfactual_dir = 'counterfactuals/example/model_dist_1layer/'
+text_dir = 'data/conj/'
+counterfactual_dir = 'counterfactuals/model_dist_3layer/'
 probe_type = 'model_dist'
 
 POS1 = 'Plural'
@@ -19,7 +19,7 @@ parse2_label = 'Singular'
 parts_of_speech1 = ['were', 'are', 'as']
 parts_of_speech2 = ['was', 'is']
 
-test_layers = [i for i in range(1, 25)]
+test_layers = [i for i in range(1, 6)]  # FIXME
 
 
 word_to_type = {}

@@ -52,12 +52,17 @@ candidates = set()
 
 fn_map = {'cloze': (create_sentence, create_tree)}  # If you want to add indirection, can have multiple templates or something.
 
-root_dir = 'data/example/'
-nn1 = ['man', 'woman', 'child']
-nn2 = ['boy', 'building', 'cat']
-nn3 = ['dog', 'girl', 'truck']
-v1s = ['saw', 'feared', 'heard']
-adjs = ['tall', 'falling', 'orange']
+root_dir = 'data/conj/'
+# nn1 = ['man', 'woman', 'child']
+# nn2 = ['boy', 'building', 'cat']
+# nn3 = ['dog', 'girl', 'truck']
+# v1s = ['saw', 'feared', 'heard']
+# adjs = ['tall', 'falling', 'orange']
+nn1 = ['man']
+nn2 = ['boy', 'building']
+nn3 = ['dog']
+v1s = ['saw', 'feared']
+adjs = ['tall', 'falling']
 mask_id = tokenizer.convert_tokens_to_ids("[MASK]")
 
 line_idx = 0
@@ -74,13 +79,15 @@ for corpus_type, fns in fn_map.items():
                         np_text = tokenizer(text, return_tensors='np')
                         mask_idx = np.where(np_text.data['input_ids'] == mask_id)[1][0]
 
-                        tokenized_text = tokenizer.encode_plus(tokenizer.wordpiece_tokenizer.tokenize(text),
+                        tokenized_text = tokenizer.encode_plus(text,
                                                                return_tensors='pt')
-                        prediction, hidden_states = model(**tokenized_text, output_hidden_states=True)
-
+                        # prediction, hidden_states = model(**tokenized_text, output_hidden_states=True)
+                        pred = model(**tokenized_text, output_hidden_states=True)
+                        prediction = pred.logits
+                        hidden_states = pred.hidden_states
                         np_prediction = prediction.cpu().detach().numpy()
                         overall_best = np.argmax(np_prediction[0, mask_idx])
-                        best_token = tokenizer.ids_to_tokens.get(overall_best)
+                        best_token = tokenizer.convert_ids_to_tokens([overall_best])[0]
                         print(text, "\t", best_token)
                         candidates.add(best_token)
 

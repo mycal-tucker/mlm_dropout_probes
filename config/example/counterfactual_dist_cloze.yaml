@@ -12,13 +12,13 @@ dataset:
      - extra_info
      - embeddings
   corpus:
-    root: data/example/
+    root: data/conj/
     train_path: text.conllx
     dev_path: text.conllx
     test_path: text.conllx
   embeddings:
     type: token
-    root: data/example/
+    root: data/conj/
     train_path: text.hdf5
     dev_path: text.hdf5
     test_path: text.hdf5
@@ -32,7 +32,7 @@ model:
 probe:
   task_signature: word_pair # word, word_pair
   task_name: parse-distance  # parse-depth, parse-distance
-  num_layers: 1  # The probe must match the weights being loaded, so make sure to set the right number of layers.
+  num_layers: 3  # The probe must match the weights being loaded, so make sure to set the right number of layers.
   maximum_rank: 32
   diagonal: False
   params_path: predictor.params
@@ -40,7 +40,7 @@ probe_training:
   epochs: 0  # Ignored in counterfactual generation
   loss: L1
 reporting:
-  root: counterfactuals/example/model_dist_1layer/model_dist
+  root: counterfactuals/model_dist_3layer/model_dist
   observation_paths:
     train_path: train.observations
     dev_path: dev.observations

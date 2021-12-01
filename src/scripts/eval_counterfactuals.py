@@ -30,7 +30,7 @@ def get_cloze_output(model_output, mask_idx, do_print=False):
     predictions_candidates = np_prediction[0, mask_idx, candidates_ids]
     answer_idx = np.argmax(predictions_candidates)
     overall_best = np.argmax(np_prediction[0, mask_idx])
-    best_token = tokenizer.ids_to_tokens.get(overall_best)
+    best_token = tokenizer.convert_ids_to_tokens([overall_best])[0]
     if do_print:
         print(f'The most likely word is "{candidates[answer_idx]}".')
         print("Overall best", best_token)
@@ -53,9 +53,9 @@ candidates = ['is', 'are', 'was', 'were', 'as']  # For example cloze task
 mask_id = tokenizer.convert_tokens_to_ids("[MASK]")
 
 # Where is the original text.
-text_data_dir = 'data/example/'
+text_data_dir = 'data/conj/'
 # What is the root of the directories that have the updated embeddings.
-counterfactuals_dir = 'counterfactuals/example/model_dist_1layer/'
+counterfactuals_dir = 'counterfactuals/model_dist_3layer/'
 probe_type = 'dist'
 
 # There's some routing logic of how to evaluate depending upon which type of model you're using. Just convert it
@@ -77,7 +77,7 @@ def get_cloze_texts():
             mask_idx = np.where(np_text.data['input_ids'] == mask_id)[1][0]
             mask_locations.append(mask_idx)
             # Record the original outputs.
-            tokenized = tokenizer.encode_plus(tokenizer.wordpiece_tokenizer.tokenize(line), return_tensors='pt')
+            tokenized = tokenizer.encode_plus(line, return_tensors='pt')
             tokenized_text.append(tokenized)
     return text, tokenized_text, mask_locations
 
@@ -156,7 +156,7 @@ text_fn = get_cloze_texts if is_cloze_model else get_qa_texts
 tail_model_cls = ClozeTail if is_cloze_model else QATail
 
 
-for layer in range(1, 25):
+for layer in range(1, 6):  # FIXME
     print("Assessing layer", layer)
     experiment_dir = counterfactuals_dir + 'model_' + probe_type + str(layer) + '/'
     original_embeddings = get_embeddings('%stext.hdf5' % text_data_dir)

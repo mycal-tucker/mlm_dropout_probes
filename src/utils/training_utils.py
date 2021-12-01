@@ -1,9 +1,9 @@
-import models.model as model
-import models.probe as probe
-import utils.dataset as dataset
-import utils.loss as loss
-import utils.reporter as reporter
-import utils.task as task
+import src.models.model as model
+import src.models.probe as probe
+import src.utils.dataset as dataset
+import src.utils.loss as loss
+import src.utils.reporter as reporter
+import src.utils.task as task
 
 
 # Helper class that looks up things like relevant dataset, model, or probe classes from config.

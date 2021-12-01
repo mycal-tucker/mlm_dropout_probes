@@ -9,8 +9,8 @@ import torch
 import yaml
 from tqdm import tqdm
 
-import utils.regimen as regimen
-from utils.training_utils import choose_task_classes, choose_dataset_class, choose_model_class, choose_probe_class
+import src.utils.regimen as regimen
+from src.utils.training_utils import choose_task_classes, choose_dataset_class, choose_model_class, choose_probe_class
 
 
 def run_train_probe(probe, dataset, model, loss, regimen):

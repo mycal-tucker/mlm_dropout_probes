@@ -11,12 +11,12 @@ This will create the directory structure in which counterfactual embeddings will
 the saved_models directory.
 """
 
-source_dir = 'saved_models/qa_example/model_dist_1layer'
-dest_dir = 'counterfactuals/qa_example/model_dist_1layer'
+source_dir = 'saved_models/model_dist_3layer'
+dest_dir = 'counterfactuals/model_dist_3layer'
 
 model_prefix = 'model_dist'
 
-for layer_id in range(1, 25):
+for layer_id in range(1, 6):  # FIXME
     probe_dir = source_dir + '/' + model_prefix + str(layer_id)
     # Find the last saved probe directory in the source area.
     model_dirs = glob.glob(os.path.join(probe_dir, '*'))

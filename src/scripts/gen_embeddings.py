@@ -12,7 +12,7 @@ model = AutoModelForMaskedLM.from_pretrained("bert-large-uncased-whole-word-mask
 # model = AutoModelForQuestionAnswering.from_pretrained("bert-large-uncased-whole-word-masking-finetuned-squad")
 
 # Set the desired source_dir and filename here.
-source_dir = 'data/example/'
+source_dir = 'data/conj/'
 filename = 'text'
 break_on_qmark = False  # If you're using questions from a QA task, this should be true.
 
@@ -33,7 +33,7 @@ for line in file1:
         print("Question", question)
         inputs = tokenizer.encode_plus(question, context, add_special_tokens=True, return_tensors="pt")
     else:
-        inputs = tokenizer.encode_plus(tokenizer.wordpiece_tokenizer.tokenize(line), return_tensors='pt')
+        inputs = tokenizer.encode_plus(line, return_tensors='pt')
     with torch.no_grad():
         model_output = model(**inputs, output_hidden_states=True)
         # Debugging logs of seeing question answers, but not actually used in main logic.
