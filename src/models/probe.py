@@ -27,7 +27,7 @@ class TwoWordPSDProbe(Probe):
             self.num_layers = 1
         self.model_dim = args['model']['hidden_dim']
         last_embedding_dim = self.model_dim
-        hidden_dim = 1024
+        hidden_dim = 768
         self.layers = nn.ModuleList()
         for layer_idx in range(self.num_layers - 1):
             self.layers.append(nn.Linear(last_embedding_dim, hidden_dim))
@@ -73,7 +73,7 @@ class OneWordPSDProbe(Probe):
             self.num_layers = 1
         self.model_dim = args['model']['hidden_dim']
         last_embedding_dim = self.model_dim
-        hidden_dim = 1024
+        hidden_dim = 768
         self.layers = nn.ModuleList()
         for layer_idx in range(self.num_layers - 1):
             self.layers.append(nn.Linear(last_embedding_dim, hidden_dim))

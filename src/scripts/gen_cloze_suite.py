@@ -9,8 +9,10 @@ The man saw the boy and the dog [MASK] tired.
 So, using "was" vs. "were" is ambiguous.
 """
 
-tokenizer = AutoTokenizer.from_pretrained("bert-large-uncased-whole-word-masking")
-model = AutoModelForMaskedLM.from_pretrained("bert-large-uncased-whole-word-masking")
+# tokenizer = AutoTokenizer.from_pretrained("bert-large-uncased-whole-word-masking")
+# model = AutoModelForMaskedLM.from_pretrained("bert-large-uncased-whole-word-masking")
+tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+model = AutoModelForMaskedLM.from_pretrained("bert-base-uncased")
 
 
 def create_sentence():

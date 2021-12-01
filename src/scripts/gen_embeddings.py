@@ -5,13 +5,17 @@ from transformers import AutoTokenizer, AutoModelForMaskedLM, AutoModelForQuesti
 
 # We default to using a model trained on the cloze task. If you're interested in other models, make sure to fetch them
 # here. E.g., previously, we used a qa model that had been finetuned on squad.
-tokenizer = AutoTokenizer.from_pretrained("bert-large-uncased-whole-word-masking")
-model = AutoModelForMaskedLM.from_pretrained("bert-large-uncased-whole-word-masking")
+# tokenizer = AutoTokenizer.from_pretrained("bert-large-uncased-whole-word-masking")
+# model = AutoModelForMaskedLM.from_pretrained("bert-large-uncased-whole-word-masking")
+tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+model = AutoModelForMaskedLM.from_pretrained("bert-base-uncased")
 # Below are options for the QA model
 # tokenizer = AutoTokenizer.from_pretrained("bert-large-uncased-whole-word-masking-finetuned-squad")
 # model = AutoModelForQuestionAnswering.from_pretrained("bert-large-uncased-whole-word-masking-finetuned-squad")
 
+num_layers = 13  # 25 for large models.
 # Set the desired source_dir and filename here.
+# source_dir = 'data/ptb/'
 source_dir = 'data/conj/'
 filename = 'text'
 break_on_qmark = False  # If you're using questions from a QA task, this should be true.
@@ -43,8 +47,8 @@ for line in file1:
             selected_tokens = inputs["input_ids"][0][answer_start:answer_end]
             print("Answer", tokenizer.decode(selected_tokens))
         embeddings = model_output[-1]
-        np_embeddings = np.zeros((25, embeddings[0].shape[1], embeddings[0].shape[2]))
-        for layer in range(25):
+        np_embeddings = np.zeros((num_layers, embeddings[0].shape[1], embeddings[0].shape[2]))
+        for layer in range(num_layers):
             np_embeddings[layer] = embeddings[layer].numpy()
         # For each of the 25 layers in the model, I have a 1 x s_length x 768 tensor.
         # Now write the embeddings to an hdf5 file for training a probe with later.

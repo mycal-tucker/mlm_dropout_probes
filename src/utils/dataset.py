@@ -329,7 +329,8 @@ class BERTDataset(SubwordDataset):
                 model_type = "bert-large-uncased-whole-word-masking-finetuned-squad"  # Default to QA
                 if 'cloze' in self.args['dataset']['embeddings']['root'] or\
                         'curated' in self.args['dataset']['embeddings']['root']:  # Gross, but is works.
-                    model_type = "bert-large-uncased-whole-word-masking"
+                    # model_type = "bert-large-uncased-whole-word-masking"
+                    model_type = "bert-base-uncased"
                 subword_tokenizer = AutoTokenizer.from_pretrained(model_type)
             except:
                 print('Couldn\'t import transformers. Exiting...')

@@ -6,9 +6,10 @@ from transformers import AutoTokenizer, AutoModelForMaskedLM, AutoModelForQuesti
 
 from src.models.intervention_model import ClozeTail, QATail
 
-# tODO: put within the logic.
-tokenizer = AutoTokenizer.from_pretrained("bert-large-uncased-whole-word-masking")
-model = AutoModelForMaskedLM.from_pretrained("bert-large-uncased-whole-word-masking")
+# tokenizer = AutoTokenizer.from_pretrained("bert-large-uncased-whole-word-masking")
+# model = AutoModelForMaskedLM.from_pretrained("bert-large-uncased-whole-word-masking")
+tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+model = AutoModelForMaskedLM.from_pretrained("bert-base-uncased")
 # Below for QA model
 # tokenizer = AutoTokenizer.from_pretrained("bert-large-uncased-whole-word-masking-finetuned-squad")
 # model = AutoModelForQuestionAnswering.from_pretrained("bert-large-uncased-whole-word-masking-finetuned-squad")
@@ -126,7 +127,7 @@ def run_cloze_eval(mask_idx):
     # when wiring through the original encodings.
     original_word_embeddings = word_embeddings[i]
     if len(original_word_embeddings.shape) == 2:
-        original_word_embeddings = original_word_embeddings.reshape(1, -1, 1024)
+        original_word_embeddings = original_word_embeddings.reshape(1, -1, 768)
     scaffolded_updated_embeddings = scaffold_embedding(original_word_embeddings)
     updated_output = tail_model(torch.tensor(scaffolded_updated_embeddings, dtype=torch.float32))
     candidate_logits, new_best = get_cloze_output(updated_output, mask_idx, do_print=True)
@@ -142,7 +143,7 @@ def run_qa_eval():
     # when wiring through the original encodings.
     original_word_embeddings = word_embeddings[i]
     if len(original_word_embeddings.shape) == 2:
-        original_word_embeddings = original_word_embeddings.reshape(1, -1, 1024)
+        original_word_embeddings = original_word_embeddings.reshape(1, -1, 768)
     scaffolded_updated_embeddings = scaffold_embedding(original_word_embeddings)
     updated_output = tail_model(torch.tensor(scaffolded_updated_embeddings, dtype=torch.float32))
     original_np = [logit_to_prob(original.numpy()) for original in original_output]
@@ -200,11 +201,11 @@ for layer in range(1, 6):  # FIXME
     updated_distances = []
     all_scaffolded_for_layer = []
     for i, updated_embedding in enumerate(updated_word_embeddings):
-        updated_embedding = updated_embedding.reshape(1, -1, 1024)
+        updated_embedding = updated_embedding.reshape(1, -1, 768)
         with torch.no_grad():
             print('\n\n\n\n')
             print("\nUsing text:\t", text[i])
-            original_embedding = original_embeddings[i][layer].reshape(1, -1, 1024)
+            original_embedding = original_embeddings[i][layer].reshape(1, -1, 768)
             original_output = tail_model(torch.tensor(original_embedding, dtype=torch.float32))
             # Check that the output from original embedding matches the normal output.
             assert len(normal_outputs) == 0 or np.allclose(normal_outputs[i][0], original_output[0]), "Not all close!"

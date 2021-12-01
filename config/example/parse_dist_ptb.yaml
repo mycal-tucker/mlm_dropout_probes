@@ -25,7 +25,7 @@ dataset:
     break_on_qmark: False
   batch_size: 40
 model:
-  hidden_dim: 1024
+  hidden_dim: 768
   model_type: BERT-disk
   use_disk: True
   model_layer: -1  # Doesn't matter, gets overwritten by script that iterates over layers.
