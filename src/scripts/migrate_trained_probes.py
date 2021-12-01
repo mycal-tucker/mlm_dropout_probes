@@ -11,8 +11,10 @@ This will create the directory structure in which counterfactual embeddings will
 the saved_models directory.
 """
 
-source_dir = 'saved_models/model_dist_3layer'
-dest_dir = 'counterfactuals/model_dist_3layer'
+# probe_suite = 'baseline_dist_3layer'
+probe_suite = 'dropout_dist_3layer'
+source_dir = 'saved_models/%s' % probe_suite
+dest_dir = 'counterfactuals/%s' % probe_suite
 
 model_prefix = 'model_dist'
 

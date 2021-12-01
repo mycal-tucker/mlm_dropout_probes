@@ -13,12 +13,13 @@ this is just parsing those metrics out of files and plotting them.:
 
 # Create these global variables for scooping up all metrics; only some will be plotted.
 # Distance probes use uuas; depth probes use root_acc; both use dspr.
-uuas_scores = np.zeros(25)
-dspr_scores = np.zeros(25)
-root_accs = np.zeros(25)
+num_layers = 12
+uuas_scores = np.zeros(num_layers + 1)
+dspr_scores = np.zeros(num_layers + 1)
+root_accs = np.zeros(num_layers + 1)
 
-root_dir = 'saved_models/example/'
-dir_prefix = 'model_depth'
+root_dir = 'saved_models/dropout_dist_3layer/'
+dir_prefix = 'model_dist'
 
 # Pull out the actual metrics from the saved files.
 for subdir in os.scandir(root_dir):
@@ -56,7 +57,7 @@ def plot_two_metrics(metric1_vals, metric2_vals, metric1_name, metric2_name):
     matplotlib.rcParams.update({'font.size': 12})
     fig, ax1 = plt.subplots()
     ax1.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
-    x_axis = [i + 1 for i in range(24)]
+    x_axis = [i + 1 for i in range(num_layers)]
     color = 'tab:red'
     ax1.set_xlabel('Layer idx')
     ax1.set_ylabel(metric1_name, color=color)

@@ -8,7 +8,8 @@ from matplotlib.ticker import FormatStrFormatter
 cloze_task = 'cloze'
 
 text_dir = 'data/conj/'
-counterfactual_dir = 'counterfactuals/model_dist_3layer/'
+# counterfactual_dir = 'counterfactuals/baseline_dist_3layer/'
+counterfactual_dir = 'counterfactuals/dropout_dist_3layer/'
 probe_type = 'model_dist'
 
 POS1 = 'Plural'
@@ -266,7 +267,7 @@ def net_probabilities():
     ax1.set_xlabel("Layer index")
     ax1.set_ylabel("Prob. " + POS1)
     fig.suptitle("Likelihood of " + POS1 + " Candidates by Layer")
-    plt.xlim(1, 24)
+    plt.xlim(1, 12)
     fig.tight_layout()
     plt.show()
 
