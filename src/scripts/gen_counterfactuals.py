@@ -122,7 +122,7 @@ if __name__ == '__main__':
     yaml_args = yaml.load(open(cli_args.experiment_config))
 
     true_reporting_root = yaml_args['reporting']['root']
-    for layer_idx in range(1, 6):  # FIXME
+    for layer_idx in range(1, 13):
         # Somewhat gross, but we override part of the config file to do a full "experiment" for each layer.
         yaml_args['model']['model_layer'] = layer_idx
         yaml_args['reporting']['root'] = true_reporting_root + str(layer_idx)

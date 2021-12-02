@@ -9,7 +9,8 @@ cloze_task = 'cloze'
 
 text_dir = 'data/conj/'
 # counterfactual_dir = 'counterfactuals/baseline_dist_3layer/'
-counterfactual_dir = 'counterfactuals/dropout_dist_3layer/'
+counterfactual_dir = 'counterfactuals/dropout1_dist_3layer/'
+# counterfactual_dir = 'counterfactuals/dropout1_depth_3layer/'
 probe_type = 'model_dist'
 
 POS1 = 'Plural'
@@ -20,7 +21,7 @@ parse2_label = 'Singular'
 parts_of_speech1 = ['were', 'are', 'as']
 parts_of_speech2 = ['was', 'is']
 
-test_layers = [i for i in range(1, 6)]  # FIXME
+test_layers = [i for i in range(1, 13)]
 
 
 word_to_type = {}
@@ -135,8 +136,8 @@ def plot_layer_updates(specific_layer, normalize=False):
 
 
 # Plot aggregated sentence data, still for just a single layer.
-for layer_id in test_layers:
-    plot_layer_updates(layer_id, normalize=False)
+#for layer_id in test_layers:
+#    plot_layer_updates(layer_id, normalize=False)
 
 
 # Now we aggregate words by part of speech, and plot how probabilities change for all layers. We no longer have
@@ -201,6 +202,7 @@ def plot_full_aggregate(normalize=False):
     ax2.errorbar(x_axis, pos2_p1_median, color='red', label=parse1_label + ' Parse')
     ax2.errorbar(x_axis, pos2_p2_median, color='blue', label=parse2_label + ' Parse')
     ax2.legend(loc="upper left")
+    plt.savefig('full_agg.png')
     plt.show()
 
     return pos1_p1, pos1_p2, pos2_p1, pos2_p2
@@ -243,7 +245,8 @@ def net_shift():
     ax1.axhline()
     fig.suptitle("Mean change in " + parse1_label + " likelihood by layer")
     fig.tight_layout()
-    plt.show()
+    #plt.show()
+    plt.savefig('net_shift.png')
 
 
 net_shift()
@@ -269,6 +272,7 @@ def net_probabilities():
     fig.suptitle("Likelihood of " + POS1 + " Candidates by Layer")
     plt.xlim(1, 12)
     fig.tight_layout()
+    plt.savefig('net_probs.png')
     plt.show()
 
 

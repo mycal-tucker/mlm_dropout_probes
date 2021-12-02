@@ -34,7 +34,7 @@ class TwoWordPSDProbe(Probe):
             last_embedding_dim = hidden_dim
         self.layers.append(nn.Linear(last_embedding_dim, self.probe_rank))
         self.to(args['device'])
-        self.dropout = nn.Dropout(0.3)
+        self.dropout = nn.Dropout(0.0)
 
     def forward(self, batch):
         """ Computes all n^2 pairs of distances after projection
@@ -81,6 +81,7 @@ class OneWordPSDProbe(Probe):
             last_embedding_dim = hidden_dim
         self.layers.append(nn.Linear(last_embedding_dim, self.probe_rank))
         self.to(args['device'])
+        self.dropout = nn.Dropout(0.0)
 
     def forward(self, batch):
         """ Computes all n depths after projection
@@ -92,7 +93,7 @@ class OneWordPSDProbe(Probe):
     Returns:
       A tensor of depths of shape (batch_size, max_seq_len)
     """
-        transformed = batch
+        transformed = self.dropout(batch)
         for layer in self.layers:
             transformed = layer(transformed).clamp(min=0)
         batchlen, seqlen, rank = transformed.size()

@@ -37,10 +37,10 @@ probe:
   diagonal: False
   params_path: predictor.params
 probe_training:
-  epochs: 30
+  epochs: 100
   loss: L1
 reporting:
-  root: saved_models/dropout_dist_3layer/model_dist
+  root: saved_models/dropout0_dist_3layer/model_dist
   observation_paths:
     train_path: train.observations
     dev_path: dev.observations

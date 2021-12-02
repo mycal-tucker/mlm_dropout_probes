@@ -55,16 +55,11 @@ candidates = set()
 fn_map = {'cloze': (create_sentence, create_tree)}  # If you want to add indirection, can have multiple templates or something.
 
 root_dir = 'data/conj/'
-# nn1 = ['man', 'woman', 'child']
-# nn2 = ['boy', 'building', 'cat']
-# nn3 = ['dog', 'girl', 'truck']
-# v1s = ['saw', 'feared', 'heard']
-# adjs = ['tall', 'falling', 'orange']
-nn1 = ['man']
-nn2 = ['boy', 'building']
-nn3 = ['dog']
-v1s = ['saw', 'feared']
-adjs = ['tall', 'falling']
+nn1 = ['man', 'woman', 'child']
+nn2 = ['boy', 'building', 'cat']
+nn3 = ['dog', 'girl', 'truck']
+v1s = ['saw', 'feared', 'heard']
+adjs = ['tall', 'falling', 'orange']
 mask_id = tokenizer.convert_tokens_to_ids("[MASK]")
 
 line_idx = 0

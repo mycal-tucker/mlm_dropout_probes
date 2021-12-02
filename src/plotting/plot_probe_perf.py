@@ -18,7 +18,8 @@ uuas_scores = np.zeros(num_layers + 1)
 dspr_scores = np.zeros(num_layers + 1)
 root_accs = np.zeros(num_layers + 1)
 
-root_dir = 'saved_models/dropout_dist_3layer/'
+root_dir = 'saved_models/dropout0_dist_3layer/'
+# root_dir = 'saved_models/dropout3_depth_3layer/'
 dir_prefix = 'model_dist'
 
 # Pull out the actual metrics from the saved files.
@@ -53,7 +54,7 @@ for subdir in os.scandir(root_dir):
 
 
 # Basic plotting functionality takes two metrics and puts them in the same plot, by layer.
-def plot_two_metrics(metric1_vals, metric2_vals, metric1_name, metric2_name):
+def plot_two_metrics(metric1_vals, metric2_vals, metric1_name, metric2_name, fig_name):
     matplotlib.rcParams.update({'font.size': 12})
     fig, ax1 = plt.subplots()
     ax1.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
@@ -68,9 +69,11 @@ def plot_two_metrics(metric1_vals, metric2_vals, metric1_name, metric2_name):
     ax2.set_ylabel(metric2_name, color=color)
     ax2.plot(x_axis, metric2_vals[1:], color=color, linestyle='--', marker='s')
     plt.tight_layout()
-    plt.show()
+    # plt.show()
+    plt.savefig(fig_name + ".png")
+    plt.close()
 
 
-plot_two_metrics(uuas_scores, dspr_scores, 'UUAS', 'DSpr.')
-plot_two_metrics(root_accs, dspr_scores, 'Root Acc.', 'DSpr.')
+plot_two_metrics(uuas_scores, dspr_scores, 'UUAS', 'DSpr.', 'dist')
+plot_two_metrics(root_accs, dspr_scores, 'Root Acc.', 'DSpr.', 'depth')
 

@@ -28,8 +28,10 @@ class ProbeRegimen:
     Args:
       probe: the probe PyTorch model the optimizer should act on.
     """
+    # self.optimizer = optim.Adam(probe.parameters(), lr=0.001)
+    # self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, mode='min', factor=0.1,patience=0)
     self.optimizer = optim.Adam(probe.parameters(), lr=0.001)
-    self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, mode='min', factor=0.1,patience=0)
+    self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, mode='min', factor=0.1, patience=5)
 
   def train_until_convergence(self, probe, model, loss, train_dataset, dev_dataset):
     """ Trains a probe until a convergence criterion is met.
@@ -49,6 +51,7 @@ class ProbeRegimen:
     self.set_optimizer(probe)
     min_dev_loss = sys.maxsize
     min_dev_loss_epoch = -1
+    patience = 10
     for epoch_index in tqdm(range(self.max_epochs), desc='[training]'):
       epoch_train_loss = 0
       epoch_dev_loss = 0
@@ -85,7 +88,7 @@ class ProbeRegimen:
         min_dev_loss = epoch_dev_loss / epoch_dev_loss_count
         min_dev_loss_epoch = epoch_index
         tqdm.write('Saving probe parameters')
-      elif min_dev_loss_epoch < epoch_index - 4:
+      elif min_dev_loss_epoch < epoch_index - patience:
         tqdm.write('Early stopping')
         break
 

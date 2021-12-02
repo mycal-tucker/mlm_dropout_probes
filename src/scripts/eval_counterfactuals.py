@@ -57,8 +57,9 @@ mask_id = tokenizer.convert_tokens_to_ids("[MASK]")
 text_data_dir = 'data/conj/'
 # What is the root of the directories that have the updated embeddings.
 # counterfactuals_dir = 'counterfactuals/baseline_dist_3layer/'
-counterfactuals_dir = 'counterfactuals/dropout_dist_3layer/'
-probe_type = 'dist'
+# counterfactuals_dir = 'counterfactuals/dropout_dist_3layer/'
+counterfactuals_dir = 'counterfactuals/dropout0_depth_3layer/'
+probe_type = 'depth'
 
 # There's some routing logic of how to evaluate depending upon which type of model you're using. Just convert it
 # into this boolean of is_cloze_model for now.
@@ -158,7 +159,7 @@ text_fn = get_cloze_texts if is_cloze_model else get_qa_texts
 tail_model_cls = ClozeTail if is_cloze_model else QATail
 
 
-for layer in range(1, 8):  # FIXME
+for layer in range(1, 13):
     print("Assessing layer", layer)
     experiment_dir = counterfactuals_dir + 'model_' + probe_type + str(layer) + '/'
     original_embeddings = get_embeddings('%stext.hdf5' % text_data_dir)
