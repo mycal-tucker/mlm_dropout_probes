@@ -9,9 +9,9 @@ cloze_task = 'cloze'
 
 text_dir = 'data/conj/'
 # counterfactual_dir = 'counterfactuals/baseline_dist_3layer/'
-counterfactual_dir = 'counterfactuals/dropout1_dist_3layer/'
+counterfactual_dir = 'counterfactuals/seed4/dropout0_depth_3layer/'
 # counterfactual_dir = 'counterfactuals/dropout1_depth_3layer/'
-probe_type = 'model_dist'
+probe_type = 'model_depth'
 
 POS1 = 'Plural'
 POS2 = 'Singular'
@@ -21,7 +21,7 @@ parse2_label = 'Singular'
 parts_of_speech1 = ['were', 'are', 'as']
 parts_of_speech2 = ['was', 'is']
 
-test_layers = [i for i in range(1, 13)]
+test_layers = [i for i in range(1, 6)]
 
 
 word_to_type = {}
@@ -62,7 +62,7 @@ def plot_sentence_probs(sentence_id):
         tick.set_rotation(25)
     ax1.legend(loc="upper left")
     fig.tight_layout()
-    plt.show()
+    # plt.show()
 
 
 # Read in the data about original and updated_probabilities
@@ -132,7 +132,7 @@ def plot_layer_updates(specific_layer, normalize=False):
     ax.legend(loc='upper left')
     ax.set_title("Mean word prob updates for layer " + str(specific_layer))
     ax.axhline()
-    plt.show()
+    # plt.show()
 
 
 # Plot aggregated sentence data, still for just a single layer.
@@ -179,7 +179,7 @@ def plot_full_aggregate(normalize=False):
         ax.legend(loc="upper left")
         p1_all.append(cross_layer_p1)
         p2_all.append(cross_layer_p2)
-    plt.show()
+    # plt.show()
 
     # Now create a single plot that aggregates the changes by part of speech for all layers.
     numpy_p1 = np.asarray(p1_all)
@@ -203,7 +203,7 @@ def plot_full_aggregate(normalize=False):
     ax2.errorbar(x_axis, pos2_p2_median, color='blue', label=parse2_label + ' Parse')
     ax2.legend(loc="upper left")
     plt.savefig('full_agg.png')
-    plt.show()
+    # plt.show()
 
     return pos1_p1, pos1_p2, pos2_p1, pos2_p2
 
@@ -270,10 +270,11 @@ def net_probabilities():
     ax1.set_xlabel("Layer index")
     ax1.set_ylabel("Prob. " + POS1)
     fig.suptitle("Likelihood of " + POS1 + " Candidates by Layer")
-    plt.xlim(1, 12)
+    plt.xlim(1, len(test_layers))
+    plt.ylim(0.34, 0.40)
     fig.tight_layout()
     plt.savefig('net_probs.png')
-    plt.show()
+    # plt.show()
 
 
 net_probabilities()

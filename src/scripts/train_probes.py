@@ -133,20 +133,23 @@ if __name__ == '__main__':
     argp.add_argument('--seed', default=0, type=int,
                       help='sets all random seeds for (within-machine) reproducibility')
     cli_args = argp.parse_args()
-    if cli_args.seed:
-        np.random.seed(cli_args.seed)
-        torch.manual_seed(cli_args.seed)
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
 
     yaml_args = yaml.load(open(cli_args.experiment_config))
-
     true_reporting_root = yaml_args['reporting']['root']
-    for layer_idx in range(1, 25):
-        # Somewhat gross, but we override part of the config file to do a full "experiment" for each layer.
-        yaml_args['model']['model_layer'] = layer_idx
-        yaml_args['reporting']['root'] = true_reporting_root + str(layer_idx)
-        setup_new_experiment_dir(cli_args, yaml_args, cli_args.results_dir)
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        yaml_args['device'] = device
-        execute_experiment(yaml_args, train_probe=cli_args.train_probe, report_results=cli_args.report_results)
+
+    seeds = [i for i in range(0, 5)]
+    for seed in seeds:
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+        curr_reporting_root = 'saved_models/seed' + str(seed) + '/' + true_reporting_root
+
+        for layer_idx in range(1, 13):
+            # Somewhat gross, but we override part of the config file to do a full "experiment" for each layer.
+            yaml_args['model']['model_layer'] = layer_idx
+            yaml_args['reporting']['root'] = curr_reporting_root + str(layer_idx)
+            setup_new_experiment_dir(cli_args, yaml_args, cli_args.results_dir)
+            device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+            yaml_args['device'] = device
+            execute_experiment(yaml_args, train_probe=cli_args.train_probe, report_results=cli_args.report_results)

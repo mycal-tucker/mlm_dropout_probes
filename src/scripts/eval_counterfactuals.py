@@ -53,13 +53,6 @@ candidates = ['is', 'are', 'was', 'were', 'as']  # For example cloze task
 
 mask_id = tokenizer.convert_tokens_to_ids("[MASK]")
 
-# Where is the original text.
-text_data_dir = 'data/conj/'
-# What is the root of the directories that have the updated embeddings.
-# counterfactuals_dir = 'counterfactuals/baseline_dist_3layer/'
-# counterfactuals_dir = 'counterfactuals/dropout_dist_3layer/'
-counterfactuals_dir = 'counterfactuals/dropout0_depth_3layer/'
-probe_type = 'depth'
 
 # There's some routing logic of how to evaluate depending upon which type of model you're using. Just convert it
 # into this boolean of is_cloze_model for now.
@@ -158,73 +151,81 @@ def run_qa_eval():
 text_fn = get_cloze_texts if is_cloze_model else get_qa_texts
 tail_model_cls = ClozeTail if is_cloze_model else QATail
 
+for seed in range(5):
+    # Where is the original text.
+    text_data_dir = 'data/conj/'
+    # What is the root of the directories that have the updated embeddings.
+    # counterfactuals_dir = 'counterfactuals/baseline_dist_3layer/'
+    # counterfactuals_dir = 'counterfactuals/dropout_dist_3layer/'
+    counterfactuals_dir = 'counterfactuals/seed' + str(seed) + '/dropout1_depth_3layer/'
+    probe_type = 'depth'
 
-for layer in range(1, 13):
-    print("Assessing layer", layer)
-    experiment_dir = counterfactuals_dir + 'model_' + probe_type + str(layer) + '/'
-    original_embeddings = get_embeddings('%stext.hdf5' % text_data_dir)
-    word_embeddings = get_embeddings('%soriginal_words.hdf5' % experiment_dir)
-    updated_word_embeddings = get_embeddings('%supdated_words.hdf5' % experiment_dir)
+    for layer in range(1, 6):
+        print("Assessing layer", layer)
+        experiment_dir = counterfactuals_dir + 'model_' + probe_type + str(layer) + '/'
+        original_embeddings = get_embeddings('%stext.hdf5' % text_data_dir)
+        word_embeddings = get_embeddings('%soriginal_words.hdf5' % experiment_dir)
+        updated_word_embeddings = get_embeddings('%supdated_words.hdf5' % experiment_dir)
 
-    # Load the sentences so we can pull out original outputs
-    text_data = text_fn()
-    text, tokenized_text = text_data[:2]
+        # Load the sentences so we can pull out original outputs
+        text_data = text_fn()
+        text, tokenized_text = text_data[:2]
 
-    original_answers = set()
-    with open('%stoken_idxs.txt' % text_data_dir, 'r') as token_file:
-        for line in token_file:
-            pass
-        last_line = line
-        parsed_line = last_line.split('\t')
-        for elt_idx, elt in enumerate(parsed_line):
-            if elt_idx <= 1:
-                continue
-            original_answers.add(str(elt).strip())
-    if candidates is None:
-        candidates = list(original_answers)
-    candidates_ids = tokenizer.convert_tokens_to_ids(candidates)
+        original_answers = set()
+        with open('%stoken_idxs.txt' % text_data_dir, 'r') as token_file:
+            for line in token_file:
+                pass
+            last_line = line
+            parsed_line = last_line.split('\t')
+            for elt_idx, elt in enumerate(parsed_line):
+                if elt_idx <= 1:
+                    continue
+                original_answers.add(str(elt).strip())
+        if candidates is None:
+            candidates = list(original_answers)
+        candidates_ids = tokenizer.convert_tokens_to_ids(candidates)
 
-    # Sanity check: just use the pipeline end-to-end.
-    # If you're really crunched for time, you don't need to run this.
-    normal_outputs = []
-    for i, token_text in enumerate(tokenized_text):
-        with torch.no_grad():
-            normal_output = model(**token_text)
-            if is_cloze_model:
-                normal_output = normal_output[0]
-                mask_idxs = text_data[2]
-                get_cloze_output(normal_output, mask_idxs[i])
-            else:
-                get_qa_output(normal_output, token_text)
-            normal_outputs.append(normal_output)
+        # Sanity check: just use the pipeline end-to-end.
+        # If you're really crunched for time, you don't need to run this.
+        normal_outputs = []
+        for i, token_text in enumerate(tokenized_text):
+            with torch.no_grad():
+                normal_output = model(**token_text)
+                if is_cloze_model:
+                    normal_output = normal_output[0]
+                    mask_idxs = text_data[2]
+                    get_cloze_output(normal_output, mask_idxs[i])
+                else:
+                    get_qa_output(normal_output, token_text)
+                normal_outputs.append(normal_output)
 
-    tail_model = tail_model_cls(model, layer)
-    file_data = []
-    updated_distances = []
-    all_scaffolded_for_layer = []
-    for i, updated_embedding in enumerate(updated_word_embeddings):
-        updated_embedding = updated_embedding.reshape(1, -1, 768)
-        with torch.no_grad():
-            print('\n\n\n\n')
-            print("\nUsing text:\t", text[i])
-            original_embedding = original_embeddings[i][layer].reshape(1, -1, 768)
-            original_output = tail_model(torch.tensor(original_embedding, dtype=torch.float32))
-            # Check that the output from original embedding matches the normal output.
-            assert len(normal_outputs) == 0 or np.allclose(normal_outputs[i][0], original_output[0]), "Not all close!"
+        tail_model = tail_model_cls(model, layer)
+        file_data = []
+        updated_distances = []
+        all_scaffolded_for_layer = []
+        for i, updated_embedding in enumerate(updated_word_embeddings):
+            updated_embedding = updated_embedding.reshape(1, -1, 768)
+            with torch.no_grad():
+                # print('\n\n\n\n')
+                # print("\nUsing text:\t", text[i])
+                original_embedding = original_embeddings[i][layer].reshape(1, -1, 768)
+                original_output = tail_model(torch.tensor(original_embedding, dtype=torch.float32))
+                # Check that the output from original embedding matches the normal output.
+                assert len(normal_outputs) == 0 or np.allclose(normal_outputs[i][0], original_output[0]), "Not all close!"
 
-            data, scaffolded_updated = run_cloze_eval(mask_idxs[i]) if is_cloze_model else run_qa_eval()
-            file_data.append(data)
+                data, scaffolded_updated = run_cloze_eval(mask_idxs[i]) if is_cloze_model else run_qa_eval()
+                file_data.append(data)
 
-            # Just as a fun metric, calculate the distance between the original and updated embeddings.
-            update_dist = np.linalg.norm(original_embedding - scaffolded_updated)
-            updated_distances.append(update_dist)
-    # Now write file_data to the file.
-    with open(experiment_dir + 'updated_probs.txt', 'w') as results_file:
-        results_file.write('\t'.join(['Candidates'] + candidates + ['\n']))
-        for line in file_data:
-            results_file.write('\t'.join([str(entry) for entry in line]))
-            results_file.write('\n')
-    with open(experiment_dir + 'updated_distances.txt', 'w') as dist_file:
-        dist_file.write('\t'.join(['Candidates'] + candidates + ['\n']))
-        for line in updated_distances:
-            dist_file.write(str(line) + '\n')
+                # Just as a fun metric, calculate the distance between the original and updated embeddings.
+                update_dist = np.linalg.norm(original_embedding - scaffolded_updated)
+                updated_distances.append(update_dist)
+        # Now write file_data to the file.
+        with open(experiment_dir + 'updated_probs.txt', 'w') as results_file:
+            results_file.write('\t'.join(['Candidates'] + candidates + ['\n']))
+            for line in file_data:
+                results_file.write('\t'.join([str(entry) for entry in line]))
+                results_file.write('\n')
+        with open(experiment_dir + 'updated_distances.txt', 'w') as dist_file:
+            dist_file.write('\t'.join(['Candidates'] + candidates + ['\n']))
+            for line in updated_distances:
+                dist_file.write(str(line) + '\n')

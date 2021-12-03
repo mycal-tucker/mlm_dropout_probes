@@ -122,10 +122,13 @@ if __name__ == '__main__':
     yaml_args = yaml.load(open(cli_args.experiment_config))
 
     true_reporting_root = yaml_args['reporting']['root']
-    for layer_idx in range(1, 13):
-        # Somewhat gross, but we override part of the config file to do a full "experiment" for each layer.
-        yaml_args['model']['model_layer'] = layer_idx
-        yaml_args['reporting']['root'] = true_reporting_root + str(layer_idx)
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        yaml_args['device'] = device
-        execute_experiment(yaml_args)
+    seeds = [i for i in range(5)]
+    for seed in seeds:
+        curr_reporting_root = 'counterfactuals/seed' + str(seed) + '/' + true_reporting_root
+        for layer_idx in range(1, 6):
+            # Somewhat gross, but we override part of the config file to do a full "experiment" for each layer.
+            yaml_args['model']['model_layer'] = layer_idx
+            yaml_args['reporting']['root'] = curr_reporting_root + str(layer_idx)
+            device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+            yaml_args['device'] = device
+            execute_experiment(yaml_args)
