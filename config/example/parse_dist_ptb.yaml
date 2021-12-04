@@ -19,9 +19,9 @@ dataset:
   embeddings:
     type: token
     root: data/ptb/
-    train_path: ptb_train.hdf5
-    dev_path: ptb_dev.hdf5
-    test_path: ptb_test.hdf5
+    train_path: ptb_train (copy).hdf5
+    dev_path: ptb_dev (copy).hdf5
+    test_path: ptb_test (copy).hdf5
     break_on_qmark: False
   batch_size: 40
 model:

@@ -157,8 +157,8 @@ for seed in range(5):
     # What is the root of the directories that have the updated embeddings.
     # counterfactuals_dir = 'counterfactuals/baseline_dist_3layer/'
     # counterfactuals_dir = 'counterfactuals/dropout_dist_3layer/'
-    counterfactuals_dir = 'counterfactuals/seed' + str(seed) + '/dropout1_depth_3layer/'
-    probe_type = 'depth'
+    counterfactuals_dir = 'counterfactuals/seed' + str(seed) + '/dropout1_dist_3layer/'
+    probe_type = 'dist'
 
     for layer in range(1, 6):
         print("Assessing layer", layer)

@@ -8,7 +8,7 @@ from matplotlib.ticker import FormatStrFormatter
 cloze_task = 'cloze'
 
 text_dir = 'data/conj/'
-probe_type = 'model_depth'
+probe_type = 'model_dist'
 
 POS1 = 'Plural'
 POS2 = 'Singular'
@@ -34,7 +34,7 @@ trials_all_layers_originals = []
 trials_all_layers_parse1 = []
 trials_all_layers_parse2 = []
 for seed in range(5):
-    counterfactual_dir = 'counterfactuals/seed' + str(seed) + '/dropout0_depth_3layer/'
+    counterfactual_dir = 'counterfactuals/seed' + str(seed) + '/dropout1_dist_3layer/'
     # Read in the data about original and updated_probabilities
     all_layers_originals = []
     all_layers_parse1 = []
