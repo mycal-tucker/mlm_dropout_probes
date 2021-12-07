@@ -8,7 +8,6 @@ from matplotlib.ticker import FormatStrFormatter
 cloze_task = 'cloze'
 
 text_dir = 'data/conj/'
-probe_type = 'model_dist'
 
 POS1 = 'Plural'
 POS2 = 'Singular'
@@ -18,7 +17,7 @@ parse2_label = 'Singular'
 parts_of_speech1 = ['were', 'are', 'as']
 parts_of_speech2 = ['was', 'is']
 
-test_layers = [i for i in range(1, 6)]
+test_layers = [i for i in range(1, 13)]
 
 
 word_to_type = {}
@@ -34,7 +33,8 @@ trials_all_layers_originals = []
 trials_all_layers_parse1 = []
 trials_all_layers_parse2 = []
 for seed in range(5):
-    counterfactual_dir = 'counterfactuals/seed' + str(seed) + '/dropout1_dist_3layer/'
+    counterfactual_dir = 'counterfactuals/seed' + str(seed) + '/dropout0_dist_3layer/'
+    probe_type = 'model_dist' if 'dist' in counterfactual_dir else 'model_depth'
     # Read in the data about original and updated_probabilities
     all_layers_originals = []
     all_layers_parse1 = []

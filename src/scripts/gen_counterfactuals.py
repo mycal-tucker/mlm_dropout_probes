@@ -125,7 +125,7 @@ if __name__ == '__main__':
     seeds = [i for i in range(5)]
     for seed in seeds:
         curr_reporting_root = 'counterfactuals/seed' + str(seed) + '/' + true_reporting_root
-        for layer_idx in range(1, 6):
+        for layer_idx in range(6, 13):
             # Somewhat gross, but we override part of the config file to do a full "experiment" for each layer.
             yaml_args['model']['model_layer'] = layer_idx
             yaml_args['reporting']['root'] = curr_reporting_root + str(layer_idx)

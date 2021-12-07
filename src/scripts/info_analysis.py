@@ -10,33 +10,45 @@ import torch.nn.functional as F
 import numpy as np
 import matplotlib.pyplot as plt
 
+from torch import optim
 
 class Net(nn.Module):
     def __init__(self, input1_size, input2_size):
-        self.H = 128
+        self.H = 1024
         self.dim1 = input1_size
         self.dim2 = input2_size
         super(Net, self).__init__()
-        self.fc1 = nn.Linear(input1_size, int(self.H / 2))
-        self.fc2 = nn.Linear(input2_size, int(self.H / 2))
+        half_h = int(self.H / 2)
+        self.fc1_1 = nn.Linear(input1_size, half_h)
+        self.fc1_2 = nn.Linear(half_h, half_h)
+        self.fc1_3 = nn.Linear(half_h, half_h)
+        self.fc2_1 = nn.Linear(input2_size, half_h)
+        self.fc2_2 = nn.Linear(half_h, half_h)
+        self.fc2_3 = nn.Linear(half_h, half_h)
         self.fc3 = nn.Linear(self.H, self.H)
         self.fc4 = nn.Linear(self.H, 1)
 
     def forward(self, x, y):
-        x1 = self.fc1(x)
+        x1 = self.fc1_1(x).clamp(min=0)
+        x1 = self.fc1_2(x1).clamp(min=0)
+        x1 = self.fc1_3(x1)
         batchlen, seqlen, rank = x1.size()
         norms1 = torch.bmm(x1.view(batchlen * seqlen, 1, rank),
                           x1.view(batchlen * seqlen, rank, 1))
         norms1 = norms1.view(batchlen, seqlen)
         if len(y.shape) == 3:
-            x2 = self.fc2(y)
+            x2 = self.fc2_1(y).clamp(min=0)
+            x2 = self.fc2_2(x2).clamp(min=0)
+            x2 = self.fc2_3(x2)
             _, x2_len, _ = x2.size()
             norms2 = torch.bmm(x2.view(batchlen * seqlen, 1, rank),
                               x2.view(batchlen * seqlen, rank, 1))
             norms2 = norms2.view(batchlen, seqlen)
         else:
             padded_y = F.pad(y, (0, self.dim2 - y.size()[1]))
-            x2 = self.fc2(padded_y)
+            x2 = self.fc2_1(padded_y).clamp(min=0)
+            x2 = self.fc2_2(x2).clamp(min=0)
+            x2 = self.fc2_3(x2)
             _, x2_len = x2.size()
             norms2 = x2
         h1 = F.relu(torch.cat([norms1, norms2], dim=1))
@@ -53,47 +65,77 @@ def get_info(args):
     expt_dataset = dataset_class(args, task)
 
     train_dataloader = expt_dataset.get_train_dataloader()
-    dim1 = 768  # For full z
-    # dim1 = int(768 / 2)
+    dev_dataloader = expt_dataset.get_dev_dataloader()
+    # dim1 = 768  # For full z
+    dim1 = int(768 / 2)
     # dim2 = 768 - dim1  # For x_second
-    # dim2 = 75  # For depth vector.
-    dim2 = 5  # For depth vector.
+    dim2 = 20  # For depth vector.
+    # dim2 = 5  # For depth vector.
 
     cutoff = dim2
     model = Net(dim1, dim2)
 
     model.to(device)
-    num_epochs = 50
+    num_epochs = 200
     tracked_info = []
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-    running_avg = 0
+    optimizer = optim.Adam(model.parameters(), lr=0.0001)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5)
+    dev_running_avg = 0
+    train_running_avg = 0
+    max_dev_info = 0
+    patience_count = 0
     for epoch in range(num_epochs):
-        print("Running avg", running_avg)
+        print("Epoch\t:", epoch, "\t:dev running avg:\t", dev_running_avg)
         for batch in tqdm(train_dataloader, desc='[training_batch'):
             optimizer.zero_grad()
             x_sample = batch[0]
-            x_first = x_sample[:, :cutoff, :dim1]
-            x_second = x_sample[:, :cutoff, dim1:]
-
+            x_first = x_sample[:, :, :dim1]
+            x_second = x_sample[:, :, dim1:]
             y_sample = batch[1]
+            # var1 = x_sample
             # var1 = x_first
-            # var1 = x_second
-            var1 = x_sample[:, :cutoff, :]
-
+            var1 = x_second
             # var2 = x_second
             var2 = y_sample
-
-            batchlen, seqlen, rank = var1.size()
             assert var2.shape[-1] == dim2 or len(var2.shape) == 2, "Var2 shape " + str(var2.shape)
             var2_shuffle = torch.Tensor(np.random.permutation(var2.cpu().numpy())).to(device)
             pred_xy = model(var1, var2)
             pred_x_y = model(var1, var2_shuffle)
             ret = torch.mean(pred_xy) - torch.log(torch.mean(torch.exp(pred_x_y)))
-            running_avg = 0.95 * running_avg + 0.05 * ret
+            train_running_avg = 0.95 * train_running_avg + 0.05 * ret.item()
             loss = -ret  # maximize
             loss.backward()
             optimizer.step()
-        tracked_info.append(running_avg.detach().cpu().numpy())
+        epoch_dev_loss = 0
+        print("Train running avg", train_running_avg)
+        print("LR", optimizer.param_groups[0]['lr'])
+        for batch in tqdm(dev_dataloader, desc='[dev_batch'):
+            with torch.no_grad():
+                x_sample = batch[0]
+                x_first = x_sample[:, :, :dim1]
+                x_second = x_sample[:, :, dim1:]
+                y_sample = batch[1]
+                # var1 = x_sample
+                # var1 = x_first
+                var1 = x_second
+                # var2 = x_second
+                var2 = y_sample
+                assert var2.shape[-1] == dim2 or len(var2.shape) == 2, "Var2 shape " + str(var2.shape)
+                var2_shuffle = torch.Tensor(np.random.permutation(var2.cpu().numpy())).to(device)
+                pred_xy = model(var1, var2)
+                pred_x_y = model(var1, var2_shuffle)
+                ret = torch.mean(pred_xy) - torch.log(torch.mean(torch.exp(pred_x_y)))
+                dev_running_avg = 0.95 * dev_running_avg + 0.05 * ret.item()
+                epoch_dev_loss -= ret
+        scheduler.step(epoch_dev_loss)
+        tracked_info.append(dev_running_avg)
+        patience_count += 1
+        if -1 * epoch_dev_loss > max_dev_info:
+            max_dev_info = -1 * epoch_dev_loss
+            patience_count = 0
+        if patience_count >= 20:
+            print("Early stopping")
+            break
     y_smoothed = gaussian_filter1d(tracked_info, sigma=5)
     plt.plot(y_smoothed)
     plt.savefig("MI.png")
@@ -106,7 +148,7 @@ if __name__ == '__main__':
     cli_args = argp.parse_args()
 
     yaml_args = yaml.load(open(cli_args.experiment_config))
-    # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    device = torch.device("cpu")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    # device = torch.device("cpu")
     yaml_args['device'] = device
     get_info(yaml_args)

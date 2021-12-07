@@ -125,7 +125,7 @@ def run_cloze_eval(mask_idx):
         original_word_embeddings = original_word_embeddings.reshape(1, -1, 768)
     scaffolded_updated_embeddings = scaffold_embedding(original_word_embeddings)
     updated_output = tail_model(torch.tensor(scaffolded_updated_embeddings, dtype=torch.float32))
-    candidate_logits, new_best = get_cloze_output(updated_output, mask_idx, do_print=True)
+    candidate_logits, new_best = get_cloze_output(updated_output, mask_idx, do_print=False)
     original_probs = logit_to_prob(original_candidate_logits)
     updated_probs = logit_to_prob(candidate_logits)
 
@@ -157,11 +157,11 @@ for seed in range(5):
     # What is the root of the directories that have the updated embeddings.
     # counterfactuals_dir = 'counterfactuals/baseline_dist_3layer/'
     # counterfactuals_dir = 'counterfactuals/dropout_dist_3layer/'
-    counterfactuals_dir = 'counterfactuals/seed' + str(seed) + '/dropout1_dist_3layer/'
-    probe_type = 'dist'
+    counterfactuals_dir = 'counterfactuals/seed' + str(seed) + '/dropout0_dist_3layer/'
+    probe_type = 'depth' if 'depth' in counterfactuals_dir else 'dist'
 
-    for layer in range(1, 6):
-        print("Assessing layer", layer)
+    for layer in range(6, 13):
+        print("Seed", seed, "Assessing layer", layer)
         experiment_dir = counterfactuals_dir + 'model_' + probe_type + str(layer) + '/'
         original_embeddings = get_embeddings('%stext.hdf5' % text_data_dir)
         word_embeddings = get_embeddings('%soriginal_words.hdf5' % experiment_dir)
