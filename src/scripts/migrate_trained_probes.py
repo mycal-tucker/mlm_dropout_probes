@@ -13,12 +13,12 @@ the saved_models directory.
 
 # probe_suite = 'baseline_dist_3layer'
 # probe_suite = 'dropout_dist_3layer'
-probe_suite = 'dropout0_dist_3layer'
+probe_suite = 'dropout2_depth_3layer'
 for seed in range(5):
     source_dir = 'saved_models/seed%s/%s' % (seed, probe_suite)
     dest_dir = 'counterfactuals/seed%s/%s' % (seed, probe_suite)
 
-    model_prefix = 'model_dist'
+    model_prefix = 'model_dist' if 'dist' in probe_suite else 'model_depth'
 
     for layer_id in range(1, 13):
         probe_dir = source_dir + '/' + model_prefix + str(layer_id)

@@ -157,10 +157,10 @@ for seed in range(5):
     # What is the root of the directories that have the updated embeddings.
     # counterfactuals_dir = 'counterfactuals/baseline_dist_3layer/'
     # counterfactuals_dir = 'counterfactuals/dropout_dist_3layer/'
-    counterfactuals_dir = 'counterfactuals/seed' + str(seed) + '/dropout0_dist_3layer/'
+    counterfactuals_dir = 'counterfactuals/seed' + str(seed) + '/dropout2_depth_3layer/'
     probe_type = 'depth' if 'depth' in counterfactuals_dir else 'dist'
 
-    for layer in range(6, 13):
+    for layer in range(1, 13):
         print("Seed", seed, "Assessing layer", layer)
         experiment_dir = counterfactuals_dir + 'model_' + probe_type + str(layer) + '/'
         original_embeddings = get_embeddings('%stext.hdf5' % text_data_dir)

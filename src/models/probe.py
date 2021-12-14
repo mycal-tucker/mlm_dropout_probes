@@ -34,7 +34,7 @@ class TwoWordPSDProbe(Probe):
             last_embedding_dim = hidden_dim
         self.layers.append(nn.Linear(last_embedding_dim, self.probe_rank))
         self.to(args['device'])
-        self.dropout = nn.Dropout(0.1)
+        self.dropout = nn.Dropout(0.4)
 
     def forward(self, batch):
         """ Computes all n^2 pairs of distances after projection
@@ -81,7 +81,7 @@ class OneWordPSDProbe(Probe):
             last_embedding_dim = hidden_dim
         self.layers.append(nn.Linear(last_embedding_dim, self.probe_rank))
         self.to(args['device'])
-        self.dropout = nn.Dropout(0.1)
+        self.dropout = nn.Dropout(0.2)
 
     def forward(self, batch):
         """ Computes all n depths after projection

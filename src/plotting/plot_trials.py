@@ -108,7 +108,7 @@ p2_pos2_change_by_sentence = np.sum(p2_pos2_delta, axis=3)
 # Plot the original and updated agregated probabilities by layer for each parse and part of speech. These are the
 # types of plots included in the main paper.
 def net_probabilities():
-    matplotlib.rcParams.update({'font.size': 9})
+    matplotlib.rcParams.update({'font.size': 12})
     p1_pos1_means = []
     p2_pos1_means = []
     x_axis = test_layers
@@ -122,17 +122,17 @@ def net_probabilities():
     p1_mean = np.mean(p1_pos1_means, axis=0)
     p2_mean = np.mean(p2_pos1_means, axis=0)
 
-    fig, ax1 = plt.subplots(nrows=1, figsize=(10, 2.1))
+    fig, ax1 = plt.subplots(nrows=1, figsize=(10, 3.1))
     ax1.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
     ax1.errorbar(x_axis, p1_mean, yerr=np.std(p1_mean), color='red', linestyle='--', label=parse1_label + ' parse')
     ax1.errorbar(x_axis, original_pos1s_mean, color='green', label='Original')
     ax1.errorbar(x_axis, p2_mean, yerr=np.std(p2_mean), color='blue', label=parse2_label + ' parse')
-    ax1.legend(loc="upper left")
+    # ax1.legend(loc="upper right")
     ax1.set_xlabel("Layer index")
     ax1.set_ylabel("Prob. " + POS1)
     fig.suptitle("Likelihood of " + POS1 + " Candidates by Layer")
     plt.xlim(1, len(test_layers))
-    plt.ylim(0.34, 0.40)
+    plt.ylim(0.33, 0.41)
     fig.tight_layout()
     plt.savefig('net_probs.png')
     plt.show()

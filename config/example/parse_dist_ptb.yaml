@@ -40,7 +40,7 @@ probe_training:
   epochs: 100
   loss: L1
 reporting:
-  root: dropout1_dist_3layer/model_dist
+  root: dropout4_dist_3layer/model_dist
   observation_paths:
     train_path: train.observations
     dev_path: dev.observations
