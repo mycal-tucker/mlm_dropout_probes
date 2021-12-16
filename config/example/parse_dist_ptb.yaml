@@ -19,9 +19,9 @@ dataset:
   embeddings:
     type: token
     root: data/ptb/
-    train_path: ptb_train (copy).hdf5
-    dev_path: ptb_dev (copy).hdf5
-    test_path: ptb_test (copy).hdf5
+    train_path: ptb_train.hdf5
+    dev_path: ptb_dev.hdf5
+    test_path: ptb_test.hdf5
     break_on_qmark: False
   batch_size: 40
 model:
@@ -40,7 +40,7 @@ probe_training:
   epochs: 100
   loss: L1
 reporting:
-  root: dropout4_dist_3layer/model_dist
+  root: dropout6_dist_3layer/model_dist
   observation_paths:
     train_path: train.observations
     dev_path: dev.observations

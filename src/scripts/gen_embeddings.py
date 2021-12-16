@@ -16,7 +16,8 @@ model = AutoModelForMaskedLM.from_pretrained("bert-base-uncased")
 num_layers = 13  # 25 for large models.
 # Set the desired source_dir and filename here.
 # source_dir = 'data/ptb/'
-source_dir = 'data/conj/'
+# source_dir = 'data/conj/'
+source_dir = 'data/npz/'
 filename = 'text'
 break_on_qmark = False  # If you're using questions from a QA task, this should be true.
 

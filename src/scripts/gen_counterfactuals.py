@@ -16,8 +16,7 @@ Generates counterfactual embeddings using probes for each layer.
 
 # Given some config, a probe, d, and a loss function, updates the elements of the dataset to minimize the loss of the
 # probe. This is the core counterfactual generation technique.
-def gen_counterfactuals(args, probe, dataset, loss):
-    loss_tolerance = 0.05
+def gen_counterfactuals(args, probe, dataset, loss, loss_tolerance):
     probe_params_path = os.path.join(args['reporting']['root'], args['probe']['params_path'])
     probe.load_state_dict(torch.load(probe_params_path, map_location=torch.device('cuda:0')))
     probe.eval()
@@ -53,7 +52,9 @@ def gen_counterfactuals(args, probe, dataset, loss):
         steps_since_best = 0
         patience = 5000
         while prediction_loss > loss_tolerance:
-            if increment_idx >= 500000:
+            if increment_idx % 500 == 0:
+                print("At increment", increment_idx, "loss", prediction_loss)
+            if increment_idx >= 200000:
                 print("Breaking because of increment index")
                 break
             predictions = probe(curr_embeddings)
@@ -69,12 +70,12 @@ def gen_counterfactuals(args, probe, dataset, loss):
                     print("Breaking because of patience with loss", prediction_loss)
                     break
             increment_idx += 1
-        print("Exited grad update loop after", increment_idx, "steps!")
+        print("Exited grad update loop after", increment_idx, "steps with loss", prediction_loss)
         updated_embeddings.extend([curr_embedding for curr_embedding in curr_embeddings])
     return original_embeddings, word_embeddings, updated_embeddings
 
 
-def execute_experiment(args):
+def execute_experiment(args, loss_tolerance):
     dataset_class = choose_dataset_class(args)
     task_class, reporter_class, loss_class = choose_task_classes(args)
     probe_class = choose_probe_class(args)
@@ -85,7 +86,7 @@ def execute_experiment(args):
     results_dir = yaml_args['reporting']['root']
 
     # Generate the counterfactuals by delegating to the right method.
-    _, word_only_embeddings, updated_embeddings = gen_counterfactuals(args, expt_probe, expt_dataset, expt_loss)
+    _, word_only_embeddings, updated_embeddings = gen_counterfactuals(args, expt_probe, expt_dataset, expt_loss, loss_tolerance)
 
     # Save the updated and original words to files.
     with torch.no_grad():
@@ -96,7 +97,7 @@ def execute_experiment(args):
     hf = h5py.File(results_dir + '/original_words.hdf5', 'w')
     for i, embedding in enumerate(np_word):
         hf.create_dataset(str(i), data=embedding)
-    hf = h5py.File(results_dir + '/updated_words.hdf5', 'w')
+    hf = h5py.File(results_dir + '/updated_words_xfactloss_' + str(loss_tolerance) + '.hdf5', 'w')
     for i, embedding in enumerate(np_updated):
         hf.create_dataset(str(i), data=embedding)
 
@@ -113,22 +114,24 @@ if __name__ == '__main__':
     argp.add_argument('--seed', default=0, type=int,
                       help='sets all random seeds for (within-machine) reproducibility')
     cli_args = argp.parse_args()
-    if cli_args.seed:
-        np.random.seed(cli_args.seed)
-        torch.manual_seed(cli_args.seed)
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
+    # if cli_args.seed:
+    #     np.random.seed(cli_args.seed)
+    #     torch.manual_seed(cli_args.seed)
+    #     torch.backends.cudnn.deterministic = True
+    #     torch.backends.cudnn.benchmark = False
 
     yaml_args = yaml.load(open(cli_args.experiment_config))
 
     true_reporting_root = yaml_args['reporting']['root']
-    seeds = [i for i in range(5)]
-    for seed in seeds:
-        curr_reporting_root = 'counterfactuals/seed' + str(seed) + '/' + true_reporting_root
-        for layer_idx in range(6, 13):
-            # Somewhat gross, but we override part of the config file to do a full "experiment" for each layer.
-            yaml_args['model']['model_layer'] = layer_idx
-            yaml_args['reporting']['root'] = curr_reporting_root + str(layer_idx)
-            device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-            yaml_args['device'] = device
-            execute_experiment(yaml_args)
+    suite = yaml_args['dataset']['corpus']['root'].split('/')[-2]  # Conj vs. npz
+    seeds = [i for i in range(0, 5)]
+    for xfact_loss in [0.2, 0.1]:
+        for seed in seeds:
+            curr_reporting_root = 'counterfactuals/' + suite + '/seed' + str(seed) + '/' + true_reporting_root
+            for layer_idx in range(1, 13):
+                # Somewhat gross, but we override part of the config file to do a full "experiment" for each layer.
+                yaml_args['model']['model_layer'] = layer_idx
+                yaml_args['reporting']['root'] = curr_reporting_root + str(layer_idx)
+                device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+                yaml_args['device'] = device
+                execute_experiment(yaml_args, xfact_loss)

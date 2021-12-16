@@ -5,20 +5,31 @@ import numpy as np
 from scipy.stats import wilcoxon
 from matplotlib.ticker import FormatStrFormatter
 
-cloze_task = 'cloze'
-
-text_dir = 'data/conj/'
-
-POS1 = 'Plural'
-POS2 = 'Singular'
-parse1_label = 'Plural'
-parse2_label = 'Singular'
-# You need to define which words belong to which part of speech
-parts_of_speech1 = ['were', 'are', 'as']
-parts_of_speech2 = ['was', 'is']
-
+is_npz = True
 test_layers = [i for i in range(1, 13)]
+seeds = [i for i in range(0, 5)]
+xfact_loss = 0.1
+dropout_rate = 1
 
+
+text_dir = 'data/npz' if is_npz else 'data/conj/'
+
+if is_npz:
+    POS1 = 'Adverb'
+    POS2 = 'Noun'
+    parse1_label = 'Adverb'
+    parse2_label = 'Noun'
+    # candidates = ['all', 'he', 'just', 'it', 'they', 'she', 'was', 'were']
+    parts_of_speech1 = ['all', 'just', 'was', 'were']
+    parts_of_speech2 = ['he', 'she', 'they', 'it']
+else:
+    POS1 = 'Plural'
+    POS2 = 'Singular'
+    parse1_label = 'Plural'
+    parse2_label = 'Singular'
+    # You need to define which words belong to which part of speech
+    parts_of_speech1 = ['were', 'are', 'as']
+    parts_of_speech2 = ['was', 'is']
 
 word_to_type = {}
 for word1 in parts_of_speech1:
@@ -32,8 +43,11 @@ candidates = None
 trials_all_layers_originals = []
 trials_all_layers_parse1 = []
 trials_all_layers_parse2 = []
-for seed in range(5):
-    counterfactual_dir = 'counterfactuals/seed' + str(seed) + '/dropout0_dist_3layer/'
+for seed in seeds:
+    if is_npz:
+        counterfactual_dir = 'counterfactuals/npz/seed' + str(seed) + '/dropout' + str(dropout_rate) + '_dist_3layer/'
+    else:
+        counterfactual_dir = 'counterfactuals/conj/seed' + str(seed) + '/dropout' + str(dropout_rate) + '_dist_3layer/'
     probe_type = 'model_dist' if 'dist' in counterfactual_dir else 'model_depth'
     # Read in the data about original and updated_probabilities
     all_layers_originals = []
@@ -44,22 +58,21 @@ for seed in range(5):
         original_probs = []
         p1_updated_probs = []
         p2_updated_probs = []
-        for seed in range(5):
-            with open(counterfactual_dir + probe_type + str(layer) + '/updated_probs.txt', 'r') as results_file:
-                for line_idx, line in enumerate(results_file):
-                    split_line = line.split('\t')
-                    if line_idx == 0 and split_line[0] == 'Candidates':
-                        new_candidates = split_line[1:-1]
-                        candidates = [cand.strip() for cand in new_candidates]
-                        continue
-                    # First half is the original probability, second half is updated
-                    updated = split_line[int(len(split_line) / 2):]
-                    if line_idx % 2 == 1:  # Off by 1 because of candidates thing!
-                        original = split_line[:int(len(split_line) / 2)]
-                        original_probs.append([ast.literal_eval(data) for data in original])
-                        p1_updated_probs.append([ast.literal_eval(data) for data in updated])
-                    else:
-                        p2_updated_probs.append([ast.literal_eval(data) for data in updated])
+        with open(counterfactual_dir + probe_type + str(layer) + '/updated_probs_xfactloss_' + str(xfact_loss) + '.txt', 'r') as results_file:
+            for line_idx, line in enumerate(results_file):
+                split_line = line.split('\t')
+                if line_idx == 0 and split_line[0] == 'Candidates':
+                    new_candidates = split_line[1:-1]
+                    candidates = [cand.strip() for cand in new_candidates]
+                    continue
+                # First half is the original probability, second half is updated
+                updated = split_line[int(len(split_line) / 2):]
+                if line_idx % 2 == 1:  # Off by 1 because of candidates thing!
+                    original = split_line[:int(len(split_line) / 2)]
+                    original_probs.append([ast.literal_eval(data) for data in original])
+                    p1_updated_probs.append([ast.literal_eval(data) for data in updated])
+                else:
+                    p2_updated_probs.append([ast.literal_eval(data) for data in updated])
         # Now we have the data, so if you want to plot probabilities for a single sentence, you can by uncommenting below.
         # for i in range(2):
         #     plot_sentence_probs(i)
@@ -108,11 +121,11 @@ p2_pos2_change_by_sentence = np.sum(p2_pos2_delta, axis=3)
 # Plot the original and updated agregated probabilities by layer for each parse and part of speech. These are the
 # types of plots included in the main paper.
 def net_probabilities():
-    matplotlib.rcParams.update({'font.size': 12})
+    matplotlib.rcParams.update({'font.size': 18})
     p1_pos1_means = []
     p2_pos1_means = []
     x_axis = test_layers
-    for trial_id in range(5):
+    for trial_id in seeds:
         p1_pos1_mean = np.mean(np.sum(p1_pos1s[trial_id], axis=2), axis=1)
         p2_pos1_mean = np.mean(np.sum(p2_pos1s[trial_id], axis=2), axis=1)
         original_pos1s_mean = np.mean(np.sum(original_pos1s[trial_id], axis=2), axis=1)
@@ -122,17 +135,20 @@ def net_probabilities():
     p1_mean = np.mean(p1_pos1_means, axis=0)
     p2_mean = np.mean(p2_pos1_means, axis=0)
 
+    mean_diff = np.mean(p1_mean) - np.mean(p2_mean)
+    print("mean_diff", mean_diff)
+
     fig, ax1 = plt.subplots(nrows=1, figsize=(10, 3.1))
     ax1.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
-    ax1.errorbar(x_axis, p1_mean, yerr=np.std(p1_mean), color='red', linestyle='--', label=parse1_label + ' parse')
+    ax1.errorbar(x_axis, p1_mean, yerr=np.std(p1_pos1_means, axis=0), color='red', linestyle='--', label=parse1_label + ' parse')
     ax1.errorbar(x_axis, original_pos1s_mean, color='green', label='Original')
-    ax1.errorbar(x_axis, p2_mean, yerr=np.std(p2_mean), color='blue', label=parse2_label + ' parse')
-    # ax1.legend(loc="upper right")
+    ax1.errorbar(x_axis, p2_mean, yerr=np.std(p1_pos1_means, axis=0), color='blue', label=parse2_label + ' parse')
+    ax1.legend(loc="upper right")
     ax1.set_xlabel("Layer index")
     ax1.set_ylabel("Prob. " + POS1)
     fig.suptitle("Likelihood of " + POS1 + " Candidates by Layer")
     plt.xlim(1, len(test_layers))
-    plt.ylim(0.33, 0.41)
+    # plt.ylim(0.29, 0.45)
     fig.tight_layout()
     plt.savefig('net_probs.png')
     plt.show()

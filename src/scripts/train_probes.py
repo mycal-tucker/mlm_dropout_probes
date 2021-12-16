@@ -150,6 +150,7 @@ if __name__ == '__main__':
             yaml_args['model']['model_layer'] = layer_idx
             yaml_args['reporting']['root'] = curr_reporting_root + str(layer_idx)
             setup_new_experiment_dir(cli_args, yaml_args, cli_args.results_dir)
-            device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            print("Device", device)
             yaml_args['device'] = device
             execute_experiment(yaml_args, train_probe=cli_args.train_probe, report_results=cli_args.report_results)

@@ -23,7 +23,7 @@ dataset:
     dev_path: text.hdf5
     test_path: text.hdf5
     break_on_qmark: False
-  batch_size: 80  # How many counterfactuals do you want to update at once?
+  batch_size: 512  # How many counterfactuals do you want to update at once?
 model:
   hidden_dim: 768
   model_type: BERT-disk
@@ -40,7 +40,7 @@ probe_training:
   epochs: 0  # Ignored in counterfactual generation
   loss: L1
 reporting:
-  root: dropout1_depth_3layer/model_depth
+  root: dropout4_depth_3layer/model_depth
   observation_paths:
     train_path: train.observations
     dev_path: dev.observations
