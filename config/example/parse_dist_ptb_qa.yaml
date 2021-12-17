@@ -12,18 +12,18 @@ dataset:
      - extra_info
      - embeddings
   corpus:
-    root: data/qa_coord/
-    train_path: text.conllx
-    dev_path: text.conllx
-    test_path: text.conllx
+    root: data/ptb/
+    train_path: ptb_train.conllx
+    dev_path: ptb_dev.conllx
+    test_path: ptb_test.conllx
   embeddings:
     type: token
-    root: data/qa_coord/
-    train_path: text.hdf5
-    dev_path: text.hdf5
-    test_path: text.hdf5
-    break_on_qmark: True
-  batch_size: 512  # How many counterfactuals do you want to update at once?
+    root: data/ptb/
+    train_path: ptb_train_qa.hdf5
+    dev_path: ptb_dev_qa.hdf5
+    test_path: ptb_test_qa.hdf5
+    break_on_qmark: False
+  batch_size: 40
 model:
   hidden_dim: 768
   model_type: BERT-disk
@@ -32,12 +32,12 @@ model:
 probe:
   task_signature: word_pair # word, word_pair
   task_name: parse-distance  # parse-depth, parse-distance
-  num_layers: 3  # The probe must match the weights being loaded, so make sure to set the right number of layers.
+  num_layers: 3
   maximum_rank: 32
   diagonal: False
   params_path: predictor.params
 probe_training:
-  epochs: 0  # Ignored in counterfactual generation
+  epochs: 100
   loss: L1
 reporting:
   root: qa_dropout0_dist_3layer/model_dist
@@ -49,3 +49,6 @@ reporting:
     train_path: train.predictions
     dev_path: dev.predictions
     test_path: test.predictions
+  reporting_methods:
+    - spearmanr
+    - uuas

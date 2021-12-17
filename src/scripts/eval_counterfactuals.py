@@ -6,13 +6,25 @@ from transformers import AutoTokenizer, AutoModelForMaskedLM, AutoModelForQuesti
 
 from src.models.intervention_model import ClozeTail, QATail
 
-# tokenizer = AutoTokenizer.from_pretrained("bert-large-uncased-whole-word-masking")
-# model = AutoModelForMaskedLM.from_pretrained("bert-large-uncased-whole-word-masking")
-tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
-model = AutoModelForMaskedLM.from_pretrained("bert-base-uncased")
-# Below for QA model
-# tokenizer = AutoTokenizer.from_pretrained("bert-large-uncased-whole-word-masking-finetuned-squad")
-# model = AutoModelForQuestionAnswering.from_pretrained("bert-large-uncased-whole-word-masking-finetuned-squad")
+
+dropout_rate = 0
+suite = 'conj'  # For mask
+# suite = 'npz'   # For mask
+# suite = 'qa_coord'  # QA coordination
+# suite = 'qa_npvp'   # QA npvp
+# suite = 'qa_rc'     # QA relative clause
+if 'qa' not in suite:
+    checkpoint = 'bert-base-uncased'  # Mask
+else:
+    checkpoint = 'twmkn9/bert-base-uncased-squad2'  # QA
+
+is_cloze_model = 'squad' not in checkpoint
+if is_cloze_model:
+    tokenizer = AutoTokenizer.from_pretrained(checkpoint)
+    model = AutoModelForMaskedLM.from_pretrained(checkpoint)
+else:
+    tokenizer = AutoTokenizer.from_pretrained(checkpoint)
+    model = AutoModelForQuestionAnswering.from_pretrained(checkpoint)
 
 
 # Return the sorted embeddings at the specified path.
@@ -48,21 +60,13 @@ def get_qa_output(model_output, tokens_line):
 def logit_to_prob(logit):
     return softmax(logit)
 
-dropout_rate = 1
-is_npz = True
-if is_npz:
+candidates = None
+if suite == 'npz':
     candidates = ['all', 'he', 'just', 'it', 'they', 'she', 'was', 'were']
-else:
-    candidates = ['is', 'are', 'was', 'were', 'as']  # For conj task
+elif suite == 'conj':
+    candidates = ['is', 'are', 'was', 'were', 'as']
 
 mask_id = tokenizer.convert_tokens_to_ids("[MASK]")
-
-
-# There's some routing logic of how to evaluate depending upon which type of model you're using. Just convert it
-# into this boolean of is_cloze_model for now.
-model_type = 'CLOZE'
-# model_type = 'QA'
-is_cloze_model = model_type == 'CLOZE'
 
 
 def get_cloze_texts():
@@ -155,14 +159,12 @@ def run_qa_eval():
 text_fn = get_cloze_texts if is_cloze_model else get_qa_texts
 tail_model_cls = ClozeTail if is_cloze_model else QATail
 for xfact_loss in [0.05, 0.1, 0.2, 0.3]:
+# for xfact_loss in [0.3]:
     for seed in range(0, 5):
         # Where is the original text.
-        text_data_dir = 'data/npz/' if is_npz else 'data/conj/'
+        text_data_dir = 'data/' + suite + '/'
         # What is the root of the directories that have the updated embeddings.
-        if is_npz:
-            counterfactuals_dir = 'counterfactuals/npz/seed' + str(seed) + '/dropout' + str(dropout_rate) + '_dist_3layer/'
-        else:
-            counterfactuals_dir = 'counterfactuals/conj/seed' + str(seed) + '/dropout' + str(dropout_rate) + '_dist_3layer/'
+        counterfactuals_dir = 'counterfactuals/' + suite + '/seed' + str(seed) + ('/dropout' if is_cloze_model else '/qa_dropout') + str(dropout_rate) + '_dist_3layer/'
         probe_type = 'depth' if 'depth' in counterfactuals_dir else 'dist'
 
         for layer in range(1, 13):  # FIXME
@@ -186,9 +188,8 @@ for xfact_loss in [0.05, 0.1, 0.2, 0.3]:
                     if elt_idx <= 1:
                         continue
                     original_answers.add(str(elt).strip())
-            if candidates is None:
-                candidates = list(original_answers)
-            candidates_ids = tokenizer.convert_tokens_to_ids(candidates)
+            if is_cloze_model:
+                candidates_ids = tokenizer.convert_tokens_to_ids(candidates)
 
             # Sanity check: just use the pipeline end-to-end.
             # If you're really crunched for time, you don't need to run this.
@@ -216,7 +217,8 @@ for xfact_loss in [0.05, 0.1, 0.2, 0.3]:
                     original_embedding = original_embeddings[i][layer].reshape(1, -1, 768)
                     original_output = tail_model(torch.tensor(original_embedding, dtype=torch.float32))
                     # Check that the output from original embedding matches the normal output.
-                    assert len(normal_outputs) == 0 or np.allclose(normal_outputs[i][0], original_output[0]), "Not all close!"
+                    if is_cloze_model:  # This assert doesn't work with QA models for whatever reason.
+                        assert len(normal_outputs) == 0 or np.allclose(normal_outputs[i][0], original_output[0]), "Not all close!"
 
                     data, scaffolded_updated = run_cloze_eval(mask_idxs[i]) if is_cloze_model else run_qa_eval()
                     file_data.append(data)
@@ -226,11 +228,13 @@ for xfact_loss in [0.05, 0.1, 0.2, 0.3]:
                     updated_distances.append(update_dist)
             # Now write file_data to the file.
             with open(experiment_dir + 'updated_probs_xfactloss_' + str(xfact_loss) + '.txt', 'w') as results_file:
-                results_file.write('\t'.join(['Candidates'] + candidates + ['\n']))
+                if is_cloze_model:
+                    results_file.write('\t'.join(['Candidates'] + candidates + ['\n']))
                 for line in file_data:
                     results_file.write('\t'.join([str(entry) for entry in line]))
                     results_file.write('\n')
             with open(experiment_dir + 'updated_distances_xfactloss_' + str(xfact_loss) + '.txt', 'w') as dist_file:
-                dist_file.write('\t'.join(['Candidates'] + candidates + ['\n']))
+                if is_cloze_model:
+                    dist_file.write('\t'.join(['Candidates'] + candidates + ['\n']))
                 for line in updated_distances:
                     dist_file.write(str(line) + '\n')

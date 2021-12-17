@@ -7,22 +7,27 @@ from transformers import AutoTokenizer, AutoModelForMaskedLM, AutoModelForQuesti
 # here. E.g., previously, we used a qa model that had been finetuned on squad.
 # tokenizer = AutoTokenizer.from_pretrained("bert-large-uncased-whole-word-masking")
 # model = AutoModelForMaskedLM.from_pretrained("bert-large-uncased-whole-word-masking")
-tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
-model = AutoModelForMaskedLM.from_pretrained("bert-base-uncased")
+# tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+# model = AutoModelForMaskedLM.from_pretrained("bert-base-uncased")
 # Below are options for the QA model
-# tokenizer = AutoTokenizer.from_pretrained("bert-large-uncased-whole-word-masking-finetuned-squad")
-# model = AutoModelForQuestionAnswering.from_pretrained("bert-large-uncased-whole-word-masking-finetuned-squad")
+tokenizer = AutoTokenizer.from_pretrained('twmkn9/bert-base-uncased-squad2')
+model = AutoModelForQuestionAnswering.from_pretrained('twmkn9/bert-base-uncased-squad2')
 
 num_layers = 13  # 25 for large models.
 # Set the desired source_dir and filename here.
 # source_dir = 'data/ptb/'
 # source_dir = 'data/conj/'
-source_dir = 'data/npz/'
+# source_dir = 'data/npz/'
+# source_dir = 'data/qa_rc/'
+# source_dir = 'data/qa_npvp/'
+source_dir = 'data/qa_coord/'
 filename = 'text'
 break_on_qmark = False  # If you're using questions from a QA task, this should be true.
 
 source_file = source_dir + filename + '.txt'
-targ_file = source_dir + filename + '.hdf5'
+# Mark the QA embeddings specially
+targ_file = source_dir + filename + '_qa' + '.hdf5'
+# targ_file = source_dir + filename + '.hdf5'
 
 file1 = open(source_file, 'r')
 idx = 0
