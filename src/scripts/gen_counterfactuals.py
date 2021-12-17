@@ -125,7 +125,7 @@ if __name__ == '__main__':
     true_reporting_root = yaml_args['reporting']['root']
     suite = yaml_args['dataset']['corpus']['root'].split('/')[-2]  # Conj vs. npz
     seeds = [i for i in range(0, 5)]
-    for xfact_loss in [0.2, 0.1]:
+    for xfact_loss in [0.3, 0.2, 0.1, 0.05]:
         for seed in seeds:
             curr_reporting_root = 'counterfactuals/' + suite + '/seed' + str(seed) + '/' + true_reporting_root
             for layer_idx in range(1, 13):

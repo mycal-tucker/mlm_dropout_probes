@@ -154,10 +154,10 @@ def run_qa_eval():
 
 text_fn = get_cloze_texts if is_cloze_model else get_qa_texts
 tail_model_cls = ClozeTail if is_cloze_model else QATail
-for xfact_loss in [0.2, 0.1]:
-    for seed in range(0, 5):  # FIXME
+for xfact_loss in [0.05, 0.1, 0.2, 0.3]:
+    for seed in range(0, 5):
         # Where is the original text.
-        text_data_dir = 'data/npz/' if is_npz else 'data/conj'
+        text_data_dir = 'data/npz/' if is_npz else 'data/conj/'
         # What is the root of the directories that have the updated embeddings.
         if is_npz:
             counterfactuals_dir = 'counterfactuals/npz/seed' + str(seed) + '/dropout' + str(dropout_rate) + '_dist_3layer/'
