@@ -20,7 +20,8 @@ num_layers = 13  # 25 for large models.
 # source_dir = 'data/npz/'
 # source_dir = 'data/qa_rc/'
 # source_dir = 'data/qa_npvp/'
-source_dir = 'data/qa_coord/'
+# source_dir = 'data/qa_coord/'
+source_dir = 'data/qa_intervene/'
 filename = 'text'
 break_on_qmark = False  # If you're using questions from a QA task, this should be true.
 

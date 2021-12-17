@@ -55,7 +55,7 @@ def plot_trials(xfact_config, _seeds, _layers):
         all_layers_nn1_parse_starts = []
         all_layers_nn2_parse_starts = []
         for layer in _layers:
-            update_file_base = effect_reporting_dir + 'model_dist' + str(layer) + '/updated_probs_xfactloss_0.05'
+            update_file_base = effect_reporting_dir + 'model_dist' + str(layer) + '/updated_probs_xfactloss_' + str(xfact_loss)
             # Read in how the probabilities got updated.
             original_start_probs = []
             nn1_parse_updated_start_probs = []
@@ -136,7 +136,7 @@ def plot_trials(xfact_config, _seeds, _layers):
     # Now plot for all trials.
 
     # Calculate the actual mean difference.
-    layer_cutoff = 6
+    layer_cutoff = 13
     overall_p1_mean = np.mean(np.array(trials_p1)[:, :layer_cutoff])
     overall_p2_mean = np.mean(np.array(trials_p2)[:, :layer_cutoff])
     overall_original_mean = np.mean(trials_orig)
@@ -171,6 +171,7 @@ if __name__ == '__main__':
     argp.add_argument('counterfactual_config')
     cli_args = argp.parse_args()
     counterfactual_args = yaml.load(open(cli_args.counterfactual_config))
-    layers = [i for i in range(1, 3)]
+    layers = [i for i in range(1, 10)]
     seeds = [i for i in range(1)]
+    xfact_loss = 0.3
     plot_trials(counterfactual_args, seeds, layers)

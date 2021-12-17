@@ -8,9 +8,9 @@ from src.models.intervention_model import ClozeTail, QATail
 
 
 dropout_rate = 0
-suite = 'conj'  # For mask
+# suite = 'conj'  # For mask
 # suite = 'npz'   # For mask
-# suite = 'qa_coord'  # QA coordination
+suite = 'qa_coord'  # QA coordination
 # suite = 'qa_npvp'   # QA npvp
 # suite = 'qa_rc'     # QA relative clause
 if 'qa' not in suite:
@@ -168,7 +168,7 @@ for xfact_loss in [0.05, 0.1, 0.2, 0.3]:
         probe_type = 'depth' if 'depth' in counterfactuals_dir else 'dist'
 
         for layer in range(1, 13):  # FIXME
-            print("Seed", seed, "Assessing layer", layer)
+            print("Seed", seed, "Assessing layer", layer, "suite", suite, "dropout rate", dropout_rate)
             experiment_dir = counterfactuals_dir + 'model_' + probe_type + str(layer) + '/'
             original_embeddings = get_embeddings('%stext.hdf5' % text_data_dir)
             word_embeddings = get_embeddings('%soriginal_words.hdf5' % experiment_dir)
