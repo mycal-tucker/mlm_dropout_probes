@@ -11,12 +11,12 @@ This will create the directory structure in which counterfactual embeddings will
 the saved_models directory.
 """
 
-# probe_suite = 'baseline_dist_3layer'
-probe_suite = 'qa_dropout0_dist_3layer'
+probe_suite = 'dropout7_dist_3layer'
+# probe_suite = 'qa_dropout0_dist_3layer'
 # probe_suite = 'dropout4_depth_3layer'
-for seed in range(0, 1):
-    # for suite in ['conj', 'npz']:
-    for suite in ['qa_coord', 'qa_npvp', 'qa_rc', 'qa_intervene']:
+for seed in range(0, 5):
+    for suite in ['conj', 'npz']:
+    # for suite in ['qa_coord', 'qa_npvp', 'qa_rc', 'qa_intervene']:
         source_dir = 'saved_models/seed%s/%s' % (seed, probe_suite)
         dest_dir = 'counterfactuals/' + suite + '/seed%s/%s' % (seed, probe_suite)
 

@@ -12,13 +12,13 @@ dataset:
      - extra_info
      - embeddings
   corpus:
-    root: data/conj/
+    root: data/npz/
     train_path: text.conllx
     dev_path: text.conllx
     test_path: text.conllx
   embeddings:
     type: token
-    root: data/conj/
+    root: data/npz/
     train_path: text.hdf5
     dev_path: text.hdf5
     test_path: text.hdf5

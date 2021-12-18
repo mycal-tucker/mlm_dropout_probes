@@ -8,8 +8,8 @@ from src.models.intervention_model import ClozeTail, QATail
 
 
 # suite = 'conj'  # For mask
-# suite = 'npz'   # For mask
-suite = 'qa_coord'  # QA coordination
+suite = 'npz'   # For mask
+# suite = 'qa_coord'  # QA coordination
 # suite = 'qa_npvp'   # QA npvp
 # suite = 'qa_rc'     # QA relative clause
 if 'qa' not in suite:
@@ -39,9 +39,9 @@ def get_embeddings(path):
 
 def get_cloze_output(model_output, mask_idx, do_print=False):
     np_prediction = model_output.cpu().detach().numpy()
-    predictions_candidates = np_prediction[0, mask_idx, candidates_ids]
+    predictions_candidates = np_prediction[mask_idx, candidates_ids]
     answer_idx = np.argmax(predictions_candidates)
-    overall_best = np.argmax(np_prediction[0, mask_idx])
+    overall_best = np.argmax(np_prediction[mask_idx])
     best_token = tokenizer.convert_ids_to_tokens([overall_best])[0]
     if do_print:
         print(f'The most likely word is "{candidates[answer_idx]}".')
@@ -123,21 +123,13 @@ def scaffold_embedding(original_word_embeddings):
 
 
 def run_cloze_eval(mask_idx):
-    original_candidate_logits, original_best = get_cloze_output(original_output, mask_idx, do_print=False)
-
     # Now find the columns that correspond to the embeddings for just the words by looking at the outputs
     # when wiring through the original encodings.
     original_word_embeddings = word_embeddings[i]
     if len(original_word_embeddings.shape) == 2:
         original_word_embeddings = original_word_embeddings.reshape(1, -1, 768)
     scaffolded_updated_embeddings = scaffold_embedding(original_word_embeddings)
-    updated_output = tail_model(torch.tensor(scaffolded_updated_embeddings, dtype=torch.float32))
-    candidate_logits, new_best = get_cloze_output(updated_output, mask_idx, do_print=False)
-    original_probs = logit_to_prob(original_candidate_logits)
-    updated_probs = logit_to_prob(candidate_logits)
-
-    all_probs = original_probs.tolist() + updated_probs.tolist()
-    return all_probs, scaffolded_updated_embeddings
+    return scaffolded_updated_embeddings
 
 
 def run_qa_eval():
@@ -147,19 +139,13 @@ def run_qa_eval():
     if len(original_word_embeddings.shape) == 2:
         original_word_embeddings = original_word_embeddings.reshape(1, -1, 768)
     scaffolded_updated_embeddings = scaffold_embedding(original_word_embeddings)
-    # updated_output = tail_model(torch.tensor(scaffolded_updated_embeddings, dtype=torch.float32))
-    # original_np = [logit_to_prob(original.numpy()) for original in original_output]
-    # updated_np = [logit_to_prob(updated.numpy()) for updated in updated_output]
-    # sentence_probs = [(original_np[0][0, j], original_np[1][0, j], updated_np[0][0, j], updated_np[1][0, j]) for j in
-    #                   range(original_np[0].shape[1])]
-    sentence_probs = 0
-    return sentence_probs, scaffolded_updated_embeddings
+    return scaffolded_updated_embeddings
 
 
 text_fn = get_cloze_texts if is_cloze_model else get_qa_texts
 tail_model_cls = ClozeTail if is_cloze_model else QATail
-for xfact_loss in [0.3, 0.2, 0.1, 0.05]:
-    for dropout_rate in [0, 2, 3, 4, 5, 6, 7, 8]:  # FIXME missing some cases
+for dropout_rate in [0, 2, 3, 4, 5, 6]:  # FIXME missing some cases
+    for xfact_loss in [0.3, 0.2, 0.1, 0.05]:
         for seed in range(0, 5):
             # Where is the original text.
             text_data_dir = 'data/' + suite + '/'
@@ -191,20 +177,7 @@ for xfact_loss in [0.3, 0.2, 0.1, 0.05]:
                 if is_cloze_model:
                     candidates_ids = tokenizer.convert_tokens_to_ids(candidates)
 
-                # Sanity check: just use the pipeline end-to-end.
-                # If you're really crunched for time, you don't need to run this.
-                normal_outputs = []
-                for i, token_text in enumerate(tokenized_text):
-                    with torch.no_grad():
-                        normal_output = model(**token_text)
-                        if is_cloze_model:
-                            normal_output = normal_output[0]
-                            mask_idxs = text_data[2]
-                            get_cloze_output(normal_output, mask_idxs[i])
-                        else:
-                            get_qa_output(normal_output, token_text)
-                        normal_outputs.append(normal_output)
-
+                mask_idxs = text_data[2]
                 tail_model = tail_model_cls(model, layer)
                 file_data = []
                 updated_distances = []
@@ -212,20 +185,61 @@ for xfact_loss in [0.3, 0.2, 0.1, 0.05]:
                 for i, updated_embedding in enumerate(updated_word_embeddings):
                     updated_embedding = updated_embedding.reshape(1, -1, 768)
                     with torch.no_grad():
-                        # print('\n\n\n\n')
-                        # print("\nUsing text:\t", text[i])
                         original_embedding = original_embeddings[i][layer].reshape(1, -1, 768)
-                        original_output = tail_model(torch.tensor(original_embedding, dtype=torch.float32))
-                        # Check that the output from original embedding matches the normal output.
-                        if is_cloze_model:  # This assert doesn't work with QA models for whatever reason.
-                            assert len(normal_outputs) == 0 or np.allclose(normal_outputs[i][0], original_output[0]), "Not all close!"
-
-                        data, scaffolded_updated = run_cloze_eval(mask_idxs[i]) if is_cloze_model else run_qa_eval()
+                        scaffolded_updated = run_cloze_eval(mask_idxs[i]) if is_cloze_model else run_qa_eval()
+                        all_scaffolded_for_layer.append(scaffolded_updated)
+                # Now create batches from the scaffolded embeddings
+                len_to_scaffolds = {}
+                for i, elt in enumerate(all_scaffolded_for_layer):
+                    length = elt.shape[1]
+                    if length not in len_to_scaffolds:
+                        len_to_scaffolds[length] = []
+                    len_to_scaffolds[length].append((elt, original_embeddings[i][layer].reshape(1, -1, 768), i))
+                all_starts = {}
+                all_ends = {}
+                for key, val in len_to_scaffolds.items():
+                    idxs = [v[2] for v in val]
+                    embs = [v[0] for v in val]
+                    o_embs = [v[1] for v in val]
+                    batch = torch.tensor(embs, dtype=torch.float32)
+                    batch = torch.squeeze(batch, 1)
+                    o_batch = torch.tensor(o_embs, dtype=torch.float32)
+                    o_batch = torch.squeeze(o_batch, 1)
+                    updated_output = tail_model(batch)
+                    original_output = tail_model(o_batch)
+                    if not is_cloze_model:
+                        # These outputs are 2-tuples of start idxs and end idxs.
+                        for idx, updated_start, original_start in zip(idxs, updated_output[0], original_output[0]):
+                            all_starts[idx] = (updated_start, original_start)
+                        for idx, updated_end, original_end in zip(idxs, updated_output[1], original_output[1]):
+                            all_ends[idx] = (updated_end, original_end)
+                    else:
+                        # Just dump into all_starts
+                        for idx, updated, original in zip(idxs, updated_output, original_output):
+                            all_starts[idx] = (updated, original)
+                if not is_cloze_model:
+                    for idx in sorted(all_starts.keys()):
+                        updated_start, original_start = all_starts.get(idx)
+                        updated_end, original_end = all_ends.get(idx)
+                        updated_start_np = logit_to_prob(updated_start.detach().numpy())
+                        original_start_np = logit_to_prob(original_start.detach().numpy())
+                        updated_end_np = logit_to_prob(updated_end.detach().numpy())
+                        original_end_np = logit_to_prob(original_end.detach().numpy())
+                        sentence_probs = []
+                        for o_prob_start, o_prob_end, u_prob_start, u_prob_end in zip(original_start_np, original_end_np, updated_start_np, updated_end_np):
+                            sentence_probs.append((o_prob_start, o_prob_end, u_prob_start, u_prob_end))
+                        file_data.append(sentence_probs)
+                else:
+                    for idx in sorted(all_starts.keys()):
+                        updated, original = all_starts.get(idx)
+                        u_candidate_logits, new_best = get_cloze_output(updated, mask_idxs[idx], do_print=False)
+                        o_candidate_logits, new_best = get_cloze_output(original, mask_idxs[idx], do_print=False)
+                        original_probs = logit_to_prob(o_candidate_logits)
+                        updated_probs = logit_to_prob(u_candidate_logits)
+                        data = original_probs.tolist() + updated_probs.tolist()
                         file_data.append(data)
 
-                        # Just as a fun metric, calculate the distance between the original and updated embeddings.
-                        update_dist = np.linalg.norm(original_embedding - scaffolded_updated)
-                        updated_distances.append(update_dist)
+
                 # Now write file_data to the file.
                 with open(experiment_dir + 'updated_probs_xfactloss_' + str(xfact_loss) + '.txt', 'w') as results_file:
                     if is_cloze_model:

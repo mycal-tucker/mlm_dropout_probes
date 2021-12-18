@@ -145,8 +145,8 @@ def do_plotting():
         plt.xlim(1, len(test_layers))
         # plt.ylim(0.29, 0.45)
         fig.tight_layout()
-        plt.savefig('net_probs.png')
-        # plt.show()
+        # plt.savefig('net_probs.png')
+        plt.show()
 
 
     net_probabilities()
@@ -154,7 +154,7 @@ def do_plotting():
 if __name__ == '__main__':
     is_npz = True
     text_dir = 'data/npz' if is_npz else 'data/conj/'
-    dropout_rate = 1
+    dropout_rate = 6
     test_layers = [i for i in range(1, 13)]
     seeds = [i for i in range(0, 5)]
     for xfact_loss in [0.3, 0.2, 0.1, 0.05]:

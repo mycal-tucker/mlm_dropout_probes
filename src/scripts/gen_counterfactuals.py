@@ -124,15 +124,19 @@ if __name__ == '__main__':
 
     true_reporting_root = yaml_args['reporting']['root']
     suite = yaml_args['dataset']['corpus']['root'].split('/')[-2]  # Conj vs. npz
-    seeds = [i for i in range(0, 1)]  # FIXME
-    # for xfact_loss in [0.3, 0.2, 0.1, 0.05]:
-    for xfact_loss in [0.3]:
-        for seed in seeds:
-            curr_reporting_root = 'counterfactuals/' + suite + '/seed' + str(seed) + '/' + true_reporting_root
-            for layer_idx in range(1, 10):  # FIXME
-                # Somewhat gross, but we override part of the config file to do a full "experiment" for each layer.
-                yaml_args['model']['model_layer'] = layer_idx
-                yaml_args['reporting']['root'] = curr_reporting_root + str(layer_idx)
-                device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-                yaml_args['device'] = device
-                execute_experiment(yaml_args, xfact_loss)
+    for dropout_rate in range(7, 10):  # FIXME
+        offset = 7 if 'qa' not in true_reporting_root else 10
+        drop_report_root = true_reporting_root[:offset] + str(dropout_rate) + true_reporting_root[offset + 1:]
+        seeds = [i for i in range(0, 5)]
+        for xfact_loss in [0.3, 0.2, 0.1, 0.05]:
+        # for xfact_loss in [0.3]:
+            for seed in seeds:
+                curr_reporting_root = 'counterfactuals/' + suite + '/seed' + str(seed) + '/' + drop_report_root
+                for layer_idx in range(1, 13):  # FIXME
+                    print("Counterfactuals for dropout", dropout_rate, "suite", suite, "xfact_loss", xfact_loss, "seed", seed, "layer", layer_idx)
+                    # Somewhat gross, but we override part of the config file to do a full "experiment" for each layer.
+                    yaml_args['model']['model_layer'] = layer_idx
+                    yaml_args['reporting']['root'] = curr_reporting_root + str(layer_idx)
+                    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+                    yaml_args['device'] = device
+                    execute_experiment(yaml_args, xfact_loss)
