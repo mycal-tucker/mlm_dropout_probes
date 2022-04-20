@@ -18,7 +18,7 @@ uuas_scores = np.zeros(num_layers + 1)
 dspr_scores = np.zeros(num_layers + 1)
 root_accs = np.zeros(num_layers + 1)
 
-root_dir = 'saved_models/dropout0_dist_3layer/'
+root_dir = 'saved_models/seed1/dropout1_dist_3layer/'
 # root_dir = 'saved_models/dropout3_depth_3layer/'
 dir_prefix = 'model_dist'
 
@@ -73,7 +73,47 @@ def plot_two_metrics(metric1_vals, metric2_vals, metric1_name, metric2_name, fig
     plt.savefig(fig_name + ".png")
     plt.close()
 
+def overall_metrics():
+    use_depth = True
+    do_qa = True
+    rate_to_metric = {}
+    for seed_dir in os.scandir('saved_models'):
+        path = seed_dir.path
+        for probe_folder in os.scandir(path):
+            if ('qa' in probe_folder.path and not do_qa) or ('qa' not in probe_folder.path and do_qa):
+                continue
+            if ('depth' in probe_folder.path and not use_depth) or ('dist' in probe_folder.path and use_depth):
+                continue
+            drop_idx = probe_folder.path.index('dropout')
+            drop_idx += 7
+            dropout_rate = int(probe_folder.path[drop_idx])
+            # Now go across all layers.
+            over_layers = []
+            for layer_dir in os.scandir(probe_folder.path):
+                model_dirs = glob.glob(os.path.join(layer_dir.path, '*') )
+                model_dir = sorted(model_dirs)[-1]
+                for results_file in os.scandir(model_dir):
+                    if 'spearmanr-5_50' in results_file.path:
+                        print("Spearman file")
+                        with open(results_file, 'r') as f:
+                            for line in f:
+                                spearman_score = float(line)
+                                over_layers.append(spearman_score)
+                    elif 'root_acc' in results_file.path:
+                        print("Root acc")
+                        with open(results_file, 'r') as f:
+                            for line in f:
+                                parsed = line.split('\t')
+                                root_acc_score = float(parsed[0])
+                                over_layers.append(root_acc_score)
 
+            if rate_to_metric.get(dropout_rate) is None:
+                rate_to_metric[dropout_rate] = []
+
+            rate_to_metric.get(dropout_rate).append(np.mean(over_layers))
+    for dropout_rate, metrics in sorted(rate_to_metric.items(), key=lambda x: x[0]):
+        print(np.mean(metrics))
+overall_metrics()
 plot_two_metrics(uuas_scores, dspr_scores, 'UUAS', 'DSpr.', 'dist')
 plot_two_metrics(root_accs, dspr_scores, 'Root Acc.', 'DSpr.', 'depth')
 

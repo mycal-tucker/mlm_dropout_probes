@@ -50,12 +50,12 @@ def plot_trials(xfact_config, _seeds, _layers):
     all_seeds_nn1_parse_starts = []
     all_seeds_nn2_parse_starts = []
     for seed in _seeds:
-        effect_reporting_dir = 'counterfactuals/qa_coord/seed' + str(seed) + '/qa_dropout0_dist_3layer/'
+        effect_reporting_dir = 'counterfactuals/qa_npvp/seed' + str(seed) + '/qa_dropout' + str(dropout_rate) + '_depth_3layer/'
         all_layers_original_starts = []
         all_layers_nn1_parse_starts = []
         all_layers_nn2_parse_starts = []
         for layer in _layers:
-            update_file_base = effect_reporting_dir + 'model_dist' + str(layer) + '/updated_probs_xfactloss_' + str(xfact_loss)
+            update_file_base = effect_reporting_dir + 'model_depth' + str(layer) + '/updated_probs_xfactloss_' + str(xfact_loss)
             # Read in how the probabilities got updated.
             original_start_probs = []
             nn1_parse_updated_start_probs = []
@@ -140,10 +140,13 @@ def plot_trials(xfact_config, _seeds, _layers):
     overall_p1_mean = np.mean(np.array(trials_p1)[:, :layer_cutoff])
     overall_p2_mean = np.mean(np.array(trials_p2)[:, :layer_cutoff])
     overall_original_mean = np.mean(trials_orig)
-    print("Mean p1 diff", overall_p1_mean - overall_original_mean)
-    print("Mean p2 diff", overall_original_mean - overall_p2_mean)
+    #print("Mean p1 diff", overall_p1_mean - overall_original_mean)
+    #print("Mean p2 diff", overall_original_mean - overall_p2_mean)
     mean_effect = overall_p1_mean - overall_p2_mean
+    print("Dropout rate", dropout_rate)
+    print("Xfact loss", xfact_loss)
     print("Mean effect", mean_effect)
+    print("Std mean effect", np.std(np.array(trials_p1) - np.array(trials_p2)))
 
     matplotlib.rcParams.update({'font.size': 18})
     fig, ax = plt.subplots(nrows=1, figsize=(10, 3.1))
@@ -161,8 +164,9 @@ def plot_trials(xfact_config, _seeds, _layers):
     # plt.ylim(0.40, 0.70)  # Attach
     # plt.ylim(0.52, 0.56)  # NPVP
     # plt.ylim(0.65, 0.82)  # RC
-    # plt.savefig('qa_net.png')
+    plt.savefig('qa_net.png')
     plt.show()
+    plt.close()
     return mean_effect
 
 
@@ -171,7 +175,8 @@ if __name__ == '__main__':
     argp.add_argument('counterfactual_config')
     cli_args = argp.parse_args()
     counterfactual_args = yaml.load(open(cli_args.counterfactual_config))
-    layers = [i for i in range(1, 10)]
-    seeds = [i for i in range(1)]
-    xfact_loss = 0.3
-    plot_trials(counterfactual_args, seeds, layers)
+    layers = [i for i in range(1, 13)]
+    seeds = [i for i in range(0, 5)]
+    for dropout_rate in range(0, 10):
+        for xfact_loss in [0.3, 0.2, 0.1, 0.05]:
+            plot_trials(counterfactual_args, seeds, layers)

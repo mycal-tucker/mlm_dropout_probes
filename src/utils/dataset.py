@@ -7,6 +7,7 @@ train/dev/test splits.
 import os
 from collections import namedtuple, defaultdict
 
+from transformers import AutoTokenizer, AutoModelForQuestionAnswering, AutoModelForMaskedLM
 from torch.utils.data import DataLoader, Dataset
 import numpy as np
 from tqdm import tqdm
@@ -324,16 +325,22 @@ class BERTDataset(SubwordDataset):
           exits immediately.
     '''
         if subword_tokenizer == None:
-            try:
-                from transformers import AutoTokenizer, AutoModelForQuestionAnswering, AutoModelForMaskedLM
-                model_type = "bert-large-uncased-whole-word-masking-finetuned-squad"  # Default to QA
-                if 'cloze' in self.args['dataset']['embeddings']['root'] or\
-                        'curated' in self.args['dataset']['embeddings']['root']:  # Gross, but is works.
-                    # model_type = "bert-large-uncased-whole-word-masking"
-                    model_type = "bert-base-uncased"
-                subword_tokenizer = AutoTokenizer.from_pretrained(model_type)
-            except:
-                print('Couldn\'t import transformers. Exiting...')
+            num_failures = 0
+            got_tokenizer = False
+            while not got_tokenizer and num_failures < 5:
+                try:
+                    model_type = 'twmkn9/bert-base-uncased-squad2'  # Default to QA
+                    if 'cloze' in self.args['dataset']['embeddings']['root'] or\
+                            'curated' in self.args['dataset']['embeddings']['root']:  # Gross, but is works.
+                        # model_type = "bert-large-uncased-whole-word-masking"
+                        model_type = "bert-base-uncased"
+                    subword_tokenizer = AutoTokenizer.from_pretrained(model_type)
+                    got_tokenizer = True
+                except:
+                    print('Couldn\'t import transformers on try number', num_failures)
+                    num_failures += 1
+            if not got_tokenizer:
+                print("Never loaded the tokenizer over 5 tries")
                 exit()
         hf = h5py.File(filepath, 'r')
         indices = list(hf.keys())

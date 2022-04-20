@@ -159,7 +159,7 @@ def run_qa_eval():
 text_fn = get_cloze_texts if is_cloze_model else get_qa_texts
 tail_model_cls = ClozeTail if is_cloze_model else QATail
 for xfact_loss in [0.3, 0.2, 0.1, 0.05]:
-    for dropout_rate in [0, 2, 3, 4, 5, 6, 7, 8]:  # FIXME missing some cases
+    for dropout_rate in [8, 9]:  # FIXME missing some cases
         for seed in range(0, 5):
             # Where is the original text.
             text_data_dir = 'data/' + suite + '/'

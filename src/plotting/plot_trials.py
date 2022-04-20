@@ -39,9 +39,9 @@ def do_plotting():
     trials_all_layers_parse2 = []
     for seed in seeds:
         if is_npz:
-            counterfactual_dir = 'counterfactuals/npz/seed' + str(seed) + '/dropout' + str(dropout_rate) + '_dist_3layer/'
+            counterfactual_dir = 'counterfactuals/npz/seed' + str(seed) + '/dropout' + str(dropout_rate) + '_' + dist_or_depth + '_3layer/'
         else:
-            counterfactual_dir = 'counterfactuals/conj/seed' + str(seed) + '/dropout' + str(dropout_rate) + '_dist_3layer/'
+            counterfactual_dir = 'counterfactuals/conj/seed' + str(seed) + '/dropout' + str(dropout_rate) + '_' + dist_or_depth + '_3layer/'
         probe_type = 'model_dist' if 'dist' in counterfactual_dir else 'model_depth'
         # Read in the data about original and updated_probabilities
         all_layers_originals = []
@@ -153,8 +153,9 @@ def do_plotting():
 
 if __name__ == '__main__':
     is_npz = True
+    dist_or_depth = 'depth'
     text_dir = 'data/npz' if is_npz else 'data/conj/'
-    dropout_rate = 6
+    dropout_rate = 9 
     test_layers = [i for i in range(1, 13)]
     seeds = [i for i in range(0, 5)]
     for xfact_loss in [0.3, 0.2, 0.1, 0.05]:

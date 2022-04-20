@@ -21,14 +21,14 @@ num_layers = 13  # 25 for large models.
 # source_dir = 'data/qa_rc/'
 # source_dir = 'data/qa_npvp/'
 # source_dir = 'data/qa_coord/'
-source_dir = 'data/qa_intervene/'
+source_dir = 'data/qa_rc/'
 filename = 'text'
-break_on_qmark = False  # If you're using questions from a QA task, this should be true.
+break_on_qmark = True  # If you're using questions from a QA task, this should be true.
 
 source_file = source_dir + filename + '.txt'
 # Mark the QA embeddings specially
-targ_file = source_dir + filename + '_qa' + '.hdf5'
-# targ_file = source_dir + filename + '.hdf5'
+#targ_file = source_dir + filename + '_qa' + '.hdf5'
+targ_file = source_dir + filename + '.hdf5'
 
 file1 = open(source_file, 'r')
 idx = 0

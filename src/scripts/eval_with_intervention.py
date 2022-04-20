@@ -141,21 +141,21 @@ def run_eval(counterfactual_config, corpus_path):
     model.eval()
 
     gen_embeddings(tokenizer, model, sdir=eval_corpus, files=['text'], break_on_q=True, num_embeddings=[5000])
-
+    dist_or_depth = 'depth'
     if not is_nli_model:
-        probe_save_dir = 'counterfactuals/qa_intervene/seed' + str(seed) + '/qa_dropout' + str(dropout_rate) + '_dist_3layer/model_dist' + str(layer)
+        probe_save_dir = 'counterfactuals/qa_intervene/seed' + str(seed) + '/qa_dropout' + str(dropout_rate) + '_' + dist_or_depth + '_3layer/model_' + dist_or_depth + str(layer)
     else:
         probe_save_dir = 'saved_models/nli/eval_probe_layer' + str(layer)
 
     # xfact_losses = [0.025, 0.05, 0.1, 0.15, 0.2]
     # xfact_losses = [0.05, 0.1, 0.2, 0.3]  # Validation
-    # xfact_losses = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35]  # Test
-    xfact_losses = [0.3]  # Just for single plot.
+    xfact_losses = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35]  # Test
+    # xfact_losses = [0.3]  # Just for single plot.
     f1s = []
     exacts = []
-    data_file = 'dist' + str(dropout_rate) + '_test_inter.txt'
+    data_file = dist_or_depth + str(dropout_rate) + '_test_inter.txt'
     for xfact_loss in xfact_losses:
-        print("Creating counterfactual embeddings")
+        print("Creating counterfactual embeddings for loss", xfact_loss)
         counterfactual_config['reporting']['root'] = probe_save_dir
         counterfactual_config['model']['model_layer'] = layer
         gen_counterfactuals(counterfactual_config, loss_tolerance=xfact_loss)
@@ -213,11 +213,10 @@ if __name__ == '__main__':
     # For NLI models.
     # eval_corpus = 'data/eval_corpora/nli/attach/'  # For attach
     # eval_corpus = 'data/eval_corpora/nli/subsequence/'  # The doctor newar the actor danced
-
-    for layer in range(1, 13):
-        for seed in range(5):
-            print("Seed", seed)
-            dropout_rate = 0
-            eval_corpus = counterfactual_args['dataset']['corpus']['root']
-            # counterfactual_args['reporting']['root'] = eval_corpus
-            run_eval(counterfactual_args, eval_corpus + '/text.json')
+    for dropout_rate in [8, 9]:
+        for layer in range(1, 13):
+            for seed in range(5):
+                print("Dropout", dropout_rate, "layer", layer, "Seed", seed)
+                eval_corpus = counterfactual_args['dataset']['corpus']['root']
+                # counterfactual_args['reporting']['root'] = eval_corpus
+                run_eval(counterfactual_args, eval_corpus + '/text.json')

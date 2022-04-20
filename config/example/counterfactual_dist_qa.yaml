@@ -12,13 +12,13 @@ dataset:
      - extra_info
      - embeddings
   corpus:
-    root: data/qa_coord/
+    root: data/qa_rc/
     train_path: text.conllx
     dev_path: text.conllx
     test_path: text.conllx
   embeddings:
     type: token
-    root: data/qa_coord/
+    root: data/qa_rc/
     train_path: text.hdf5
     dev_path: text.hdf5
     test_path: text.hdf5
@@ -40,7 +40,7 @@ probe_training:
   epochs: 0  # Ignored in counterfactual generation
   loss: L1
 reporting:
-  root: qa_dropout0_dist_3layer/model_dist
+  root: qa_dropout3_dist_3layer/model_dist
   observation_paths:
     train_path: train.observations
     dev_path: dev.observations

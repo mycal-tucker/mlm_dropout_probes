@@ -12,17 +12,17 @@ dataset:
      - extra_info
      - embeddings
   corpus:
-    root: data/npz/
+    root: data/qa_npvp/
     train_path: text.conllx
     dev_path: text.conllx
     test_path: text.conllx
   embeddings:
     type: token
-    root: data/npz/
+    root: data/qa_npvp/
     train_path: text.hdf5
     dev_path: text.hdf5
     test_path: text.hdf5
-    break_on_qmark: False
+    break_on_qmark: True
   batch_size: 512  # How many counterfactuals do you want to update at once?
 model:
   hidden_dim: 768
@@ -40,7 +40,7 @@ probe_training:
   epochs: 0  # Ignored in counterfactual generation
   loss: L1
 reporting:
-  root: dropout0_depth_3layer/model_depth
+  root: qa_dropout0_depth_3layer/model_depth
   observation_paths:
     train_path: train.observations
     dev_path: dev.observations

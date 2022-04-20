@@ -8,10 +8,10 @@ from src.models.intervention_model import ClozeTail, QATail
 
 
 # suite = 'conj'  # For mask
-suite = 'npz'   # For mask
+# suite = 'npz'   # For mask
 # suite = 'qa_coord'  # QA coordination
 # suite = 'qa_npvp'   # QA npvp
-# suite = 'qa_rc'     # QA relative clause
+suite = 'qa_rc'     # QA relative clause
 if 'qa' not in suite:
     checkpoint = 'bert-base-uncased'  # Mask
 else:
@@ -144,13 +144,14 @@ def run_qa_eval():
 
 text_fn = get_cloze_texts if is_cloze_model else get_qa_texts
 tail_model_cls = ClozeTail if is_cloze_model else QATail
-for dropout_rate in [0, 2, 3, 4, 5, 6]:  # FIXME missing some cases
+for dropout_rate in range(0, 10):  # FIXME missing some cases
     for xfact_loss in [0.3, 0.2, 0.1, 0.05]:
+    # for xfact_loss in [0.3]:
         for seed in range(0, 5):
             # Where is the original text.
             text_data_dir = 'data/' + suite + '/'
             # What is the root of the directories that have the updated embeddings.
-            counterfactuals_dir = 'counterfactuals/' + suite + '/seed' + str(seed) + ('/dropout' if is_cloze_model else '/qa_dropout') + str(dropout_rate) + '_dist_3layer/'
+            counterfactuals_dir = 'counterfactuals/' + suite + '/seed' + str(seed) + ('/dropout' if is_cloze_model else '/qa_dropout') + str(dropout_rate) + '_depth_3layer/'
             probe_type = 'depth' if 'depth' in counterfactuals_dir else 'dist'
 
             for layer in range(1, 13):  # FIXME
@@ -177,7 +178,8 @@ for dropout_rate in [0, 2, 3, 4, 5, 6]:  # FIXME missing some cases
                 if is_cloze_model:
                     candidates_ids = tokenizer.convert_tokens_to_ids(candidates)
 
-                mask_idxs = text_data[2]
+                if is_cloze_model:
+                    mask_idxs = text_data[2]
                 tail_model = tail_model_cls(model, layer)
                 file_data = []
                 updated_distances = []

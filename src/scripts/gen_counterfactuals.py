@@ -25,6 +25,11 @@ def gen_counterfactuals(args, probe, dataset, loss, loss_tolerance):
     updated_embeddings = []
     test_dataloader = dataset.get_test_dataloader()
     iteration_idx = -1
+    #all_tolerances = [0.3, 0.2, 0.1, 0.05]
+    all_tolerances = [0.35, 0.3, 0.25, 0.20, 0.15, 0.1, 0.05]
+    all_xfacts = {}
+    next_loss_idx = 0
+    loss_tolerance = 0.05
     for batch_idx, batch in enumerate(test_dataloader):
         iteration_idx += batch[0].shape[0]
         observation_batch, label_batch, length_batch, _ = batch
@@ -38,8 +43,12 @@ def gen_counterfactuals(args, probe, dataset, loss, loss_tolerance):
                 q_mark_idx = sentence.index('?')
                 q_mark_idxs.append(q_mark_idx)
             for i, q_mark_idx in enumerate(q_mark_idxs):
-                true_labels[i, :q_mark_idx + 1] = -1
-                true_labels[i, :, :q_mark_idx + 1] = -1
+                # print("dim", true_labels.shape)
+                if len(true_labels.shape) == 2:  # Depth task
+                    true_labels[i, :q_mark_idx + 1] = -1
+                else:
+                    true_labels[i, :q_mark_idx + 1] = -1
+                    true_labels[i, :, :q_mark_idx + 1] = -1
         curr_embeddings = start_embeddings
         word_embeddings.extend([curr_embedding.clone() for curr_embedding in curr_embeddings])
         curr_embeddings = curr_embeddings.cuda()
@@ -51,12 +60,16 @@ def gen_counterfactuals(args, probe, dataset, loss, loss_tolerance):
         smallest_loss = prediction_loss
         steps_since_best = 0
         patience = 5000
-        while prediction_loss > loss_tolerance:
-            if increment_idx % 500 == 0:
+        while next_loss_idx < len(all_tolerances):
+            if increment_idx % 1000 == 0:
                 print("At increment", increment_idx, "loss", prediction_loss)
-            if increment_idx >= 200000:
+            if increment_idx >= 50000:
                 print("Breaking because of increment index")
                 break
+            if prediction_loss < all_tolerances[next_loss_idx]:
+                # Save this result.
+                all_xfacts[all_tolerances[next_loss_idx]] = [curr_embedding.detach().clone() for curr_embedding in curr_embeddings]
+                next_loss_idx += 1
             predictions = probe(curr_embeddings)
             prediction_loss, count = loss(predictions, torch.reshape(true_labels, predictions.shape), length_batch)
             prediction_loss.backward()
@@ -68,11 +81,20 @@ def gen_counterfactuals(args, probe, dataset, loss, loss_tolerance):
                 steps_since_best += 1
                 if steps_since_best == patience:
                     print("Breaking because of patience with loss", prediction_loss)
+                    #if next_loss_idx < len(all_tolerances):
+                    #    while next_loss_idx < len(all_tolerances):
+                    #        all_xfacts[all_tolerances[next_loss_idx]] = all_xfacts[all_tolerances[next_loss_idx - 1]]
+                    #        next_loss_idx += 1
                     break
             increment_idx += 1
         print("Exited grad update loop after", increment_idx, "steps with loss", prediction_loss)
         updated_embeddings.extend([curr_embedding for curr_embedding in curr_embeddings])
-    return original_embeddings, word_embeddings, updated_embeddings
+    if next_loss_idx < len(all_tolerances):  # Stopped early
+        while next_loss_idx < len(all_tolerances):
+            all_xfacts[all_tolerances[next_loss_idx]] = [curr_embedding.detach().clone() for curr_embedding in curr_embeddings]
+            next_loss_idx += 1
+    #return original_embeddings, word_embeddings, updated_embeddings
+    return word_embeddings, all_xfacts
 
 
 def execute_experiment(args, loss_tolerance):
@@ -84,22 +106,34 @@ def execute_experiment(args, loss_tolerance):
     expt_probe = probe_class(args)
     expt_loss = loss_class(args)
     results_dir = args['reporting']['root']
-
+    print("Called execute experiment with loss", loss_tolerance)
+    all_losses = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35]
+    # If it exists, just return that.
+    if os.path.exists(results_dir + '/updated_words_xfactloss_' + str(loss_tolerance) + '.hdf5'):
+        print('Already computed for loss', loss_tolerance)
+        return
+    print("Don't already have file", results_dir + '/updated_words_xfactloss_' + str(loss_tolerance) + '.hdf5')
+    # Otherwise, create all the embeddings
     # Generate the counterfactuals by delegating to the right method.
-    _, word_only_embeddings, updated_embeddings = gen_counterfactuals(args, expt_probe, expt_dataset, expt_loss, loss_tolerance)
-
+    #_, word_only_embeddings, updated_embeddings = gen_counterfactuals(args, expt_probe, expt_dataset, expt_loss, loss_tolerance)
+    word_only_embeddings, all_xfacts = gen_counterfactuals(args, expt_probe, expt_dataset, expt_loss, loss_tolerance)
     # Save the updated and original words to files.
     with torch.no_grad():
         np_word = [embedding.cpu().numpy() for embedding in word_only_embeddings]
-        np_updated = [embedding.cpu().numpy() for embedding in updated_embeddings]
+        for key, val in all_xfacts.items():
+            np_updates = [embedding.cpu().numpy() for embedding in val]
+            hf = h5py.File(results_dir + '/updated_words_xfactloss_' + str(key) + '.hdf5', 'w')
+            for i, embedding in enumerate(np_updates):
+                hf.create_dataset(str(i), data=embedding)
+        #np_updated = [embedding.cpu().numpy() for embedding in updated_embeddings]
     if not os.path.exists(results_dir):
         os.makedirs(results_dir)
     hf = h5py.File(results_dir + '/original_words.hdf5', 'w')
     for i, embedding in enumerate(np_word):
         hf.create_dataset(str(i), data=embedding)
-    hf = h5py.File(results_dir + '/updated_words_xfactloss_' + str(loss_tolerance) + '.hdf5', 'w')
-    for i, embedding in enumerate(np_updated):
-        hf.create_dataset(str(i), data=embedding)
+    #hf = h5py.File(results_dir + '/updated_words_xfactloss_' + str(loss_tolerance) + '.hdf5', 'w')
+    #for i, embedding in enumerate(np_updated):
+    #    hf.create_dataset(str(i), data=embedding)
 
 
 if __name__ == '__main__':
@@ -124,12 +158,12 @@ if __name__ == '__main__':
 
     true_reporting_root = yaml_args['reporting']['root']
     suite = yaml_args['dataset']['corpus']['root'].split('/')[-2]  # Conj vs. npz
-    for dropout_rate in range(7, 10):  # FIXME
+    for dropout_rate in range(0, 10):  # FIXME
         offset = 7 if 'qa' not in true_reporting_root else 10
         drop_report_root = true_reporting_root[:offset] + str(dropout_rate) + true_reporting_root[offset + 1:]
         seeds = [i for i in range(0, 5)]
-        for xfact_loss in [0.3, 0.2, 0.1, 0.05]:
-        # for xfact_loss in [0.3]:
+        # for xfact_loss in [0.3, 0.2, 0.1, 0.05]:
+        for xfact_loss in [0.05]:
             for seed in seeds:
                 curr_reporting_root = 'counterfactuals/' + suite + '/seed' + str(seed) + '/' + drop_report_root
                 for layer_idx in range(1, 13):  # FIXME
