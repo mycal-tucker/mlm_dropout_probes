@@ -1,6 +1,8 @@
-# causal-probe
-Implementation of counterfactual probing technique discussed in "What if This Modified That? Syntactic Interventions via Counterfactual Embeddings" by Tucker et al.
-In brief, we generate counterfactual embeddings according to syntactic probes and see if these new embeddings modify the model outputs.
+# dropout-probes
+Implementation of counterfactual probing technique (with dropout) discussed in "When Does Syntax Mediate Neural Language Model Performance?
+Evidence from Dropout Probes" by Tucker et al.
+This code is largely similar to the causal probing techinque first introduced by Tucker et al. in "What if This Modified That? Syntactic Interventions via Counterfactual Embeddings,"
+The key differences are that probes now use dropout, which is critical overcoming "false negatives."
 
 If you find this code useful, please cite the paper.
 If you have questions, feel free to email mycal@mit.edu.
@@ -9,7 +11,7 @@ If you have questions, feel free to email mycal@mit.edu.
 This README is mostly designed to walk you through a full working example from training probes to generating counterfactuals to evaluating results.
 We'll work through a specific example because modifying bits of functionality should be relatively simple within the framework.
 
-All scripts must be run from causal-probe/
+All scripts must be run from mlm_dropout_probes/
 
 ### Training probes
 To generate counterfactuals, we need trained probes. This isn't the core research here, so if you have trouble, just email mycal@mit.edu. But the steps below should get you training probes easily enough.
@@ -17,6 +19,7 @@ To generate counterfactuals, we need trained probes. This isn't the core researc
    As a heads up, the resulting .hdf5 files are quite big, so make sure you have about 80 GB of disk space.
    Oh, and set break_on_qmark to False, because we don't want to break things up by question mark when training the probe (but we will later for QA counterfactual embeddings).
 2) Run ``src/scripts/train_probes.py`` with a parameter pointing to the config file ``config/example/parse_dist_ptb.yaml``. This trains the probes and takes a few hours to run.
+Note that the dropout rate is hardcoded within the probe class right now. So, make sure to update that to whatever value you want.
 Trained probes, with performance metrics, are saved to the reporting destination, specified in config.
  3) If you want to plot the probe performance metrics instead of just reading the files, look at the ``plotting/plot_probe_perf.py`` script.
    It pulls out some of the basic metrics and plots them. You might have to do some editing of the file if you want the depth probe vs. distance probe, for example.
@@ -28,7 +31,7 @@ This is how to generate the data that we'll use for counterfactuals. It's actual
 1) Run scripts/gen_cloze_suite.py. This generates some example sentences and trees in data/example.
 2) Generate the conllx file by going into the stanford nlp folder somewhere and running the following command (obviously updated for your specific paths)
 
-``sudo java -mx3g -cp "*" edu.stanford.nlp.trees.EnglishGrammaticalStructure -treeFile ~/src/causal-probe/data/example/text.trees -checkConnected -basic -keepPunct -conllx > ~/src/causal-probe/data/example/text.conllx``
+``sudo java -mx3g -cp "*" edu.stanford.nlp.trees.EnglishGrammaticalStructure -treeFile ~/src/mlm_dropout_probes/data/example/text.trees -checkConnected -basic -keepPunct -conllx > ~/src/causal-probe/data/example/text.conllx``
 
 3) Run scripts/gen_embeddings.py. This generates embeddings for each layer for each of the sentences in the specified text file and saves them to an hdf5 file.
 
@@ -57,29 +60,30 @@ The script produces .txt files that save relevant metrics about the model output
 You set relevant directories by directly modifying the variables for different directories.
 There are lots of different types of plots to generate - the different plotting methods have comments at the top of them to say what each one does.
 Based on the findings from our work, you should find a consistent effect from using the distance-based probes to generate counterfactuals for mask word prediction.
-   
-### What about QA Models?
-Although the prior steps all focused on the masked word prediction, we support models for extractive question answering.
-You'll have to redo everything for these models, though: generate new embeddings, train new probes, generate a test suite, generate counterfactuals, and plot.
-Most of the time, this just means modifying config or a few variables at the top of scripts (in particular, make sure you use appropriate tokenizers and models!!!).
-Because of the custom nature of plotting, we have a separate plotting script, ``plotting/plot_qa_counterfactual_results.py``, for visualizing the effect of QA counterfactuals.
+
+
+### What about "boosting performance"?
+In the paper, we discuss how we can boost a QA model's performance by injecting syntactic information for non-syntactically-ambiguous sentences.
+The key script for recreating those experiments is ``src/scripts/eval_with_intervention.py`` which takes the standard config file as its argument.
+
+The script writes results to a file, which you can then plot using the ``plot_interventions.py`` script.
+
+### What about redundancy analysis?
+In the paper, we use a technique called Mutual Information Neural Estimation (MINE) from prior art to estimate syntactic redundancy in encodings.
+You can recreate those results with the ``src/scripts/info_analysis.py`` script as well.
 
 ## Congratulations!
-Congratulations! You made it to the end. At this point, you should have done everything from training probes to plotting the effect of counterfactual embeddings.
+Congratulations! You made it to the end.
 
-But don't stop here! There's so much more to do, as detailed by some of the ideas below:
+At this point, you've trained probes for a fixed dropout rate and measured the counterfactual effects.
+You've also shown how we can boost QA model performance via interventions.
 
-1) Use a different language model.
-To do this, you'll need to do this whole process from scratch: create new embeddings, train probes, etc.
-2) Evaluate on a different test suite.
-If all you want is a different evaluation suite, you can reuse your trained probes,t you'll need to start at the "generating syntactically interesting setup" to create new sentences, trees, and counterfactuals.
-3) Use a different type of probe.
-Very cool idea. To do this, you'll have to start editing the code itself instead of just tweaking parameters. You'll likely want to define a new probe in ``probe.py``. Make sure to update config to point to the new class, as well as updating the delegation logic in ``training_utils.py`` to then point to that class.
-4) Calculate other metrics for counterfactuals.
-If you want to look into aspects of the generated counterfactuals, the good news is that you don't need to train new probes or even generate new counterfactuals. Just update ``eval_counterfactuals.py`` to calculate a new metric and save it to a file, and then write new plotting logic to plot those metrics.
-We have an example of a fun metric of calculating the distance of counterfactuals in ``eval_counterfactuals.py`` that we do actively use.
+Next steps for mor rigorous evaluation would be:
+1) Test on different test suites. Any of the scripts about generating suites (all under ``src/scripts``) should be useful.
+2) Test with different dropout rates. The dropout rate is currently hardcoded in probe.py. Feel free to edit that. Just change the directory you save the probes to in the config so that you don't overwrite your old probes.
+3) Test with different BERT-based models. This codebase supports MASK and QA models - the NLI codebase was kept separate during rapid development. In principle, however, the key ideas of (dropout) probe-based interventions can be easily adapted to any BERT-like model.
    
 If you have questions or more ideas, please reach out to mycal@mit.edu.
-If you find this work useful, please cite the paper with the BibTex below:
+If you find this work useful, please cite the paper.
 
 
